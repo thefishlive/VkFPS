@@ -21,8 +21,9 @@
 ******************************************************************************/
 #include "g_device.h"
 #include "GLFW/glfw3.h"
+#include "g_window.h"
 
-GraphicsDevice::GraphicsDevice()
+GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 {
 	// Create Vulkan Instance
 	vk::ApplicationInfo application_info(
@@ -35,10 +36,6 @@ GraphicsDevice::GraphicsDevice()
 	std::vector<const char *> instance_layers;
 	std::vector<const char *> instance_extensions;
 
-#if defined(ENABLE_VK_LAYER_VALIDATION) || defined(ENABLE_VK_LAYER_ASSISTANT)
-	instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-#endif
-
 	uint32_t glfw_ext_count;
 	const char ** glfw_exts = glfwGetRequiredInstanceExtensions(&glfw_ext_count);
 
@@ -46,6 +43,10 @@ GraphicsDevice::GraphicsDevice()
 	{
 		instance_extensions.push_back(glfw_exts[i]);
 	}
+
+#if defined(ENABLE_VK_LAYER_VALIDATION) || defined(ENABLE_VK_LAYER_ASSISTANT)
+	instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+#endif
 
 #ifdef ENABLE_VK_LAYER_VALIDATION
 	instance_layers.push_back("VK_LAYER_LUNARG_core_validation");
@@ -66,9 +67,11 @@ GraphicsDevice::GraphicsDevice()
 
 	instance = vk::createInstanceUnique(create_info);
 
+	vk::SurfaceKHR surface = window.create_surface(instance.get());
+
 	// Select physical device
 	QueueFamilyIndicies queue_data;
-	physical_deivce = select_physical_device(queue_data);
+	physical_deivce = select_physical_device(surface, queue_data);
 
 	// Create Logical Device
 	std::vector<vk::DeviceQueueCreateInfo> queues;
@@ -96,14 +99,14 @@ GraphicsDevice::GraphicsDevice()
 
 	device = physical_deivce.createDeviceUnique(device_create_info, nullptr);
 
-	graphics_queue = GraphicsQueue(device->getQueue(queue_data.graphics_queue, 0));
+	//graphics_queue = GraphicsQueue(device->getQueue(queue_data.graphics_queue, 0));
 }
 
 GraphicsDevice::~GraphicsDevice()
 {
 }
 
-bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, QueueFamilyIndicies & queue_data)
+bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const
 {
 	auto properties = physical_device.getProperties();
 	auto queue_families = physical_device.getQueueFamilyProperties();
@@ -111,9 +114,14 @@ bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, Queu
 	unsigned i = 0;
 	for (auto const& queue_family : queue_families)
 	{
-		if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
+		if (queue_family.queueCount > 0 && queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
 		{
 			queue_data.graphics_queue = i;
+		}
+
+		if (queue_family.queueCount > 0 && physical_device.getSurfaceSupportKHR(i, surface))
+		{
+			queue_data.present_queue = i;
 		}
 
 		i++;
@@ -123,13 +131,13 @@ bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, Queu
 		queue_data.is_complete();
 }
 
-vk::PhysicalDevice GraphicsDevice::select_physical_device(QueueFamilyIndicies & queue_data)
+vk::PhysicalDevice GraphicsDevice::select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const
 {
 	auto physical_devices = this->instance->enumeratePhysicalDevices();
 
 	for (auto const& physical_device : physical_devices) 
 	{
-		if (this->is_device_suitable(physical_device, queue_data))
+		if (this->is_device_suitable(physical_device, surface, queue_data))
 		{
 			return physical_device;
 		}

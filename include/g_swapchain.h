@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,39 +19,26 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-#pragma once
+#pragma once 
 
-#include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
+#include "g_device.h"
 #include "g_window.h"
 
-struct QueueFamilyIndicies
-{
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
-	{
-		return graphics_queue != -1 /*&& present_queue != -1*/;
-	}
-};
-
-class GraphicsDevice
+class GraphicsSwapchain
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	~GraphicsDevice();
+	GraphicsSwapchain(GraphicsWindow & window, GraphicsDevice & device);
+	~GraphicsSwapchain();
 
-	vk::UniqueInstance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::UniqueDevice device;
+	uint32_t aquire_image(vk::Device device, vk::Semaphore aquire_semaphore);
+	void present_image(vk::Device device, uint32_t image_index, vk::Semaphore wait_semaphore);
 
 private:
-	/*GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;*/
+	vk::UniqueSwapchainKHR swapchain;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	vk::SurfaceFormatKHR select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats) const;
+	vk::PresentModeKHR select_present_mode(std::vector<vk::PresentModeKHR> present_modes) const;
+	vk::Extent2D select_swap_extent(vk::SurfaceCapabilitiesKHR surface_capabilities) const;
 };

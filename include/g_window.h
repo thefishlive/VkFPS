@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -21,37 +21,25 @@
 ******************************************************************************/
 #pragma once
 
-#include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
+#include <GLFW/glfw3.h>
 
-struct QueueFamilyIndicies
-{
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
-	{
-		return graphics_queue != -1 /*&& present_queue != -1*/;
-	}
-};
-
-class GraphicsDevice
+class GraphicsWindow
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	~GraphicsDevice();
+	GraphicsWindow(std::string window_name, uint32_t width, uint32_t height);
+	GraphicsWindow(GraphicsWindow & window);
+	~GraphicsWindow();
 
-	vk::UniqueInstance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::UniqueDevice device;
+	vk::SurfaceKHR create_surface(vk::Instance instance);
 
+	bool should_close() const { return glfwWindowShouldClose(window.get()); }
+	void poll_events() const { glfwPollEvents(); }
+
+	vk::SurfaceKHR surface;
 private:
-	/*GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;*/
+	std::shared_ptr<GLFWwindow> window;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	vk::Extent2D window_size;
 };

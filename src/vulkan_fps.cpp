@@ -20,11 +20,30 @@
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
 
+#include <iostream>
+
 #include "g_device.h"
+#include "g_swapchain.h"
+#include "g_window.h"
 
 int main(int argc, char *argv[])
 {
-	GraphicsDevice device;
+	std::cout << "Starting vulkan application" << std::endl;
 
+	{
+		GraphicsWindow window("Vulkan FPS", 800, 800);
+		GraphicsDevice device(window);
+		GraphicsSwapchain swapchain(window, device);
+
+		std::cout << "Setup vulkan application" << std::endl;
+
+		while (!window.should_close())
+		{
+			window.poll_events();
+		}
+	}
+
+	std::cout << "destroyed vulkan application" << std::endl;
+	
 	while (true);
 }

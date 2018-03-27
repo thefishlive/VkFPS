@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,39 +19,51 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-#pragma once
 
-#include <memory>
-#include <vulkan/vulkan.hpp>
-
-#include "g_queue.h"
 #include "g_window.h"
 
-struct QueueFamilyIndicies
+GraphicsWindow::GraphicsWindow(std::string window_name, uint32_t width, uint32_t height)
 {
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
+	glfwInit();
 
-	bool is_complete() const
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+	GLFWwindow *window = glfwCreateWindow(width, height, window_name.c_str(), nullptr, nullptr);
+
+	const char *description;
+	if (glfwGetError(&description) != GLFW_NO_ERROR)
 	{
-		return graphics_queue != -1 /*&& present_queue != -1*/;
+		throw std::exception(description);
 	}
-};
 
-class GraphicsDevice
+	this->window = std::shared_ptr<GLFWwindow>(window);
+	this->window_size = vk::Extent2D(width, height);
+}
+
+GraphicsWindow::~GraphicsWindow()
 {
-public:
-	GraphicsDevice(GraphicsWindow & window);
-	~GraphicsDevice();
+	glfwTerminate();
+}
 
-	vk::UniqueInstance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::UniqueDevice device;
+vk::SurfaceKHR GraphicsWindow::create_surface(vk::Instance instance)
+{
+	VkSurfaceKHR surface;
+	VkResult result = glfwCreateWindowSurface((VkInstance)instance, this->window.get(), nullptr, &surface);
+	if (result < 0)
+	{
+		std::exception("Error creating window surface");
+	}
 
-private:
-	/*GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;*/
+	this->surface = vk::SurfaceKHR(surface);
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-};
+	return this->surface;
+}
+
+GraphicsWindow::GraphicsWindow(GraphicsWindow& window)
+	: surface(window.surface), 
+		window(window.window), 
+		window_size(window.window_size)
+{
+
+}
