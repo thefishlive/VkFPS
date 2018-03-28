@@ -34,7 +34,7 @@ struct QueueFamilyIndicies
 
 	bool is_complete() const
 	{
-		return graphics_queue != -1 /*&& present_queue != -1*/;
+		return graphics_queue != -1 && present_queue != -1;
 	}
 };
 

@@ -22,6 +22,11 @@
 
 #include "g_window.h"
 
+static void glfw_error_callback(int error, const char *description)
+{
+	throw std::exception(description);
+}
+
 GraphicsWindow::GraphicsWindow(std::string window_name, uint32_t width, uint32_t height)
 {
 	glfwInit();
@@ -29,14 +34,10 @@ GraphicsWindow::GraphicsWindow(std::string window_name, uint32_t width, uint32_t
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+	glfwSetErrorCallback(&glfw_error_callback);
+
 	GLFWwindow *window = glfwCreateWindow(width, height, window_name.c_str(), nullptr, nullptr);
-
-	const char *description;
-	if (glfwGetError(&description) != GLFW_NO_ERROR)
-	{
-		throw std::exception(description);
-	}
-
+	
 	this->window = std::shared_ptr<GLFWwindow>(window);
 	this->window_size = vk::Extent2D(width, height);
 }
