@@ -28,6 +28,8 @@ class GraphicsPipeline
 public:
 	GraphicsPipeline();
 	~GraphicsPipeline();
+
+	void Build();
 	
 private:
 	vk::Pipeline m_pipeline;

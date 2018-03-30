@@ -18,6 +18,7 @@ GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, GraphicsDevice & d
 	vk::PresentModeKHR present_mode = this->select_present_mode(device.physical_deivce.getSurfacePresentModesKHR(window.surface));
 	vk::Extent2D image_extent = this->select_swap_extent(surface_capabilities);
 
+	// TODO allow for combined graphics/present queues (Sharing Mode Concurrent)
 	vk::SharingMode image_sharing_mode = vk::SharingMode::eExclusive;
 	std::vector<uint32_t> queue_families;
 
@@ -37,38 +38,72 @@ GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, GraphicsDevice & d
 		present_mode
 	);
 
-	device.device->createSwapchainKHRUnique(swapchain_create_info);
+	this->swapchain = device.device->createSwapchainKHRUnique(swapchain_create_info);
+	this->swapchain_format = image_format;
+	this->swapchain_extent = image_extent;
+
+	this->images = device.device->getSwapchainImagesKHR(this->swapchain.get());
+	
+	for (const auto & image : this->images)
+	{
+		vk::ImageViewCreateInfo view_create_info(
+			vk::ImageViewCreateFlags(0),
+			image,
+			vk::ImageViewType::e2D,
+			image_format.format,
+			vk::ComponentMapping(
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity
+			),
+			vk::ImageSubresourceRange(
+				vk::ImageAspectFlagBits::eColor,
+				0, 1,
+				0, 1
+			)
+		);
+
+		this->image_views.push_back(device.device->createImageViewUnique(view_create_info));
+	}
+
+	this->present_queue = device.graphics_queue.queue;
 }
 
 GraphicsSwapchain::~GraphicsSwapchain()
 {
-	
 }
 
 
-uint32_t GraphicsSwapchain::aquire_image(vk::Device device, vk::Semaphore aquire_semaphore)
-{/*
-	uint32_t index;
-	device.acquireNextImageKHR(vk::SwapchainKHR(), std::numeric_limits<uint32_t>::max(), aquire_semaphore, VK_NULL_HANDLE, &index);*/
-	return -1;
-}
-
-void GraphicsSwapchain::present_image(vk::Device device, uint32_t image_index, vk::Semaphore wait_semaphore)
+uint32_t GraphicsSwapchain::aquire_image(vk::Device device, vk::Semaphore aquire_semaphore) const
 {
+	return device.acquireNextImageKHR(this->swapchain.get(), std::numeric_limits<uint32_t>::max(), aquire_semaphore, vk::Fence()).value;
+}
+
+void GraphicsSwapchain::present_image(vk::Device device, uint32_t image_index, vk::Semaphore wait_semaphore) const
+{
+	std::vector<vk::Semaphore> wait_semaphores = { wait_semaphore };
+	std::vector<vk::SwapchainKHR> swapchains = { swapchain.get() };
+	std::vector<uint32_t> image_indicies = { image_index };
+
+	vk::PresentInfoKHR present_info(
+		(uint32_t) wait_semaphores.size(), wait_semaphores.data(),
+		(uint32_t) swapchains.size(), swapchains.data(), image_indicies.data()
+	);
+
+	present_queue.presentKHR(present_info);
 }
 
 vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats) const
 {
-	if (image_formats.size() == 0)
-	{
-		throw std::exception("No formats supported");
-	}
+	assert(image_formats.size() > 0);
 
 	if (image_formats.size() == 1 && image_formats[0].format == vk::Format::eUndefined)
 	{
 		return vk::SurfaceFormatKHR({ vk::Format::eB8G8R8A8Snorm, vk::ColorSpaceKHR::eSrgbNonlinear });
 	}
 
+	// TODO select better image format
 	for (const auto& format : image_formats) {
 		if (format.format == vk::Format::eB8G8R8A8Snorm && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
 			return format;
@@ -80,6 +115,8 @@ vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::Surf
 
 vk::PresentModeKHR GraphicsSwapchain::select_present_mode(std::vector<vk::PresentModeKHR> present_modes) const
 {
+	assert(present_modes.size() > 0);
+
 	vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
 
 	for (const auto& mode : present_modes) {

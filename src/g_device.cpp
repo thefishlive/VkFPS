@@ -22,6 +22,43 @@
 #include "g_device.h"
 #include "GLFW/glfw3.h"
 #include "g_window.h"
+#include <iostream>
+#include <set>
+
+VkResult vkCreateDebugReportCallbackEXT(
+	VkInstance instance,
+	const VkDebugReportCallbackCreateInfoEXT * pCreateInfo,
+	const VkAllocationCallbacks * pAllocator,
+	VkDebugReportCallbackEXT * pCallback
+)
+{
+	PFN_vkCreateDebugReportCallbackEXT func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+	return func(instance, pCreateInfo, pAllocator, pCallback);
+}
+
+void vkDestroyDebugReportCallbackEXT(
+	VkInstance instance,
+	VkDebugReportCallbackEXT callback,
+	const VkAllocationCallbacks * pAllocator
+)
+{
+	PFN_vkDestroyDebugReportCallbackEXT func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+	return func(instance, callback, pAllocator);
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+	VkDebugReportFlagsEXT flags,
+	VkDebugReportObjectTypeEXT objType,
+	uint64_t obj,
+	size_t location,
+	int32_t code,
+	const char* layerPrefix,
+	const char* msg,
+	void* userData)
+{
+	std::cerr << "Validation Error: " << layerPrefix << ": " << msg << std::endl;
+	return VK_FALSE;
+}
 
 GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 {
@@ -49,7 +86,7 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 #endif
 
 #ifdef ENABLE_VK_LAYER_VALIDATION
-	instance_layers.push_back("VK_LAYER_LUNARG_core_validation");
+	instance_layers.push_back("VK_LAYER_LUNARG_standard_validation");
 #endif
 #ifdef ENABLE_VK_LAYER_ASSISTANT
 	instance_layers.push_back("VK_LAYER_LUNARG_assistant_layer");
@@ -67,6 +104,14 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 
 	instance = vk::createInstanceUnique(create_info);
 
+	debug_report_callback = instance.get().createDebugReportCallbackEXTUnique(vk::DebugReportCallbackCreateInfoEXT(
+		vk::DebugReportFlagBitsEXT::eError |
+		vk::DebugReportFlagBitsEXT::eWarning |
+		vk::DebugReportFlagBitsEXT::ePerformanceWarning |
+		vk::DebugReportFlagBitsEXT::eInformation,
+		&debug_callback
+	));
+
 	vk::SurfaceKHR surface = window.create_surface(instance.get());
 
 	// Select physical device
@@ -74,6 +119,7 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 	physical_deivce = select_physical_device(surface, queue_data);
 
 	// Create Logical Device
+	std::set<uint32_t> queue_indicies = {queue_data.graphics_queue, queue_data.present_queue};
 	std::vector<vk::DeviceQueueCreateInfo> queues;
 	std::array<float, 1> queue_priorities;
 	std::vector<const char *> device_extensions;
@@ -83,12 +129,15 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 
 	queue_priorities[0] = 1.0f;
 
-	queues.push_back(vk::DeviceQueueCreateInfo(
-		vk::DeviceQueueCreateFlags(0),
-		queue_data.graphics_queue,
-		(uint32_t) queue_priorities.size(), queue_priorities.data()
-	));
-	
+	for (const auto & index : queue_indicies)
+	{
+		queues.push_back(vk::DeviceQueueCreateInfo(
+			vk::DeviceQueueCreateFlags(0),
+			index,
+			(uint32_t)queue_priorities.size(), queue_priorities.data()
+		));
+	}
+
 	vk::DeviceCreateInfo device_create_info(
 		vk::DeviceCreateFlags(0),
 		(uint32_t) queues.size(), queues.data(),
@@ -99,11 +148,19 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 
 	device = physical_deivce.createDeviceUnique(device_create_info, nullptr);
 
-	//graphics_queue = GraphicsQueue(device->getQueue(queue_data.graphics_queue, 0));
+	graphics_queue = GraphicsQueue(device.get(), queue_data.graphics_queue);
+	present_queue = GraphicsQueue(device.get(), queue_data.present_queue);
 }
 
 GraphicsDevice::~GraphicsDevice()
 {
+}
+
+vk::UniqueSemaphore GraphicsDevice::create_semaphore()
+{
+	return device.get().createSemaphoreUnique(vk::SemaphoreCreateInfo(
+		vk::SemaphoreCreateFlags(0)
+	));
 }
 
 bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const
@@ -127,12 +184,14 @@ bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, vk::
 		i++;
 	}
 
+	// TODO remove dependency on discrete gpus
 	return properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu &&
 		queue_data.is_complete();
 }
 
 vk::PhysicalDevice GraphicsDevice::select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const
 {
+	// TODO Better grading of devices
 	auto physical_devices = this->instance->enumeratePhysicalDevices();
 
 	for (auto const& physical_device : physical_devices) 

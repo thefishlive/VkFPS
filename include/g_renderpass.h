@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -21,41 +21,31 @@
 ******************************************************************************/
 #pragma once
 
-#include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
-
-struct QueueFamilyIndicies
-{
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
-	{
-		return graphics_queue != -1 && present_queue != -1;
-	}
-};
-
-class GraphicsDevice
+class GraphicsRenderpass
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	~GraphicsDevice();
+	GraphicsRenderpass();
+	~GraphicsRenderpass();
 
-	vk::UniqueInstance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::UniqueDevice device;
+	void add_attachment(vk::AttachmentDescription attachment);
 
-	vk::UniqueSemaphore create_semaphore();
+	void add_subpass(vk::SubpassDescription subpass);
+	void add_subpass_dependency(vk::SubpassDependency dependency);
 
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
+	void create_renderpass(vk::Device);
+
+	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent);
+
+	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values);
+	void end_renderpass(vk::CommandBuffer command_buffer) const;
 
 private:
-	vk::UniqueDebugReportCallbackEXT debug_report_callback;
+	bool created;
+	vk::UniqueRenderPass renderpass;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	std::vector<vk::AttachmentDescription> attachments;
+	std::vector<vk::SubpassDescription> subpasses;
+	std::vector<vk::SubpassDependency> dependencies;
 };

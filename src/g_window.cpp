@@ -66,5 +66,4 @@ GraphicsWindow::GraphicsWindow(GraphicsWindow& window)
 		window(window.window), 
 		window_size(window.window_size)
 {
-
 }

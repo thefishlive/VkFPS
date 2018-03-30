@@ -26,9 +26,16 @@
 class GraphicsQueue
 {
 public:
-	explicit GraphicsQueue(vk::Queue queue) : queue(queue) {}
+	GraphicsQueue() {}
+	explicit GraphicsQueue(vk::Device device, uint32_t queue_index);
 	~GraphicsQueue();
 
-private:
+	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, uint32_t count) const;
+
+	void submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::UniqueSemaphore & check_semaphore, vk::UniqueSemaphore & update_semaphore) const;
+
 	vk::Queue queue;
+
+private:
+	vk::CommandPool command_pool;
 };
