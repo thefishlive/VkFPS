@@ -49,7 +49,7 @@ set (GENERATED_HEADERS
 )
 
 add_executable(VulkanFps
-	"${SOURCE}"
+    "${SOURCE}"
 )
 add_dependencies(VulkanFps CreateExtensionFile Resources)
 target_link_libraries(VulkanFps
@@ -58,15 +58,15 @@ target_link_libraries(VulkanFps
 )
 target_include_directories(VulkanFps
     PUBLIC external/glfw/include
-    PUBLIC external/glm/include
-    PUBLIC external/vma/include
+    PUBLIC external/glm
+    PUBLIC external/vma/src
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
     PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/include"
 )
 target_sources(VulkanFps
-	PRIVATE ${SHADERS}
+    PRIVATE ${SHADERS}
     PRIVATE ${SHADERS_BIN}
-	PRIVATE ${HEADERS}
+    PRIVATE ${HEADERS}
     PRIVATE ${GENERATED_SOURCE}
 )
 IF (ENABLE_VK_LAYER_VALIDATION)
