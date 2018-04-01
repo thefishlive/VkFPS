@@ -30,6 +30,7 @@ set (SOURCE
 	"${SRC_DIR}/g_device.cpp"
     "${SRC_DIR}/g_pipeline.cpp"
     "${SRC_DIR}/g_queue.cpp"
+    "${SRC_DIR}/u_io.cpp"
 )
 
 set (GENERATED_SOURCE
@@ -42,6 +43,7 @@ set (HEADERS
     "${INCLUDE_DIR}/g_pipeline.h"
     "${INCLUDE_DIR}/g_queue.h"
     "${INCLUDE_DIR}/vk_ext_internal.h"
+    "${INCLUDE_DIR}/u_io.h"
 )
 
 set (GENERATED_HEADERS
