@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(NAME VulkanCraft)
+set(NAME VkFPS)
 project (${NAME})
 
 set (VERSION_MAJOR 1)
@@ -10,6 +10,7 @@ set (VERSION_MINOR 0)
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/build/")
 
 add_subdirectory("external/glfw")
+add_subdirectory("resources")
 add_subdirectory("tools")
 
 find_package(Vulkan REQUIRED)
@@ -20,17 +21,6 @@ OPTION(ENABLE_VK_LAYER_VALIDATION_DEBUG "Enable VK_LAYER_LUNARG_standard_validat
 OPTION(ENABLE_VK_LAYER_API_DUMP "Enable VK_LAYER_LUNARG_api_dump layer" OFF)
 OPTION(ENABLE_VK_LAYER_ASSISTANT "Enable VK_LAYER_LUNARG_assistant_layer layer" OFF)
 OPTION(ENABLE_VK_LAYER_MONITOR "Enable VK_LAYER_LUNARG_monitor layer" OFF)
-
-macro(compile_shader shader out_shader out_hdr prefix)
-add_custom_command(OUTPUT ${out_shader}
-    COMMAND ${SPIRV_COMPILER} ${shader} -o ${out_shader}
-    DEPENDS ${shader}
-)
-add_custom_command(OUTPUT ${out_hdr}
-    COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/tools/spv-to-header.py ${out_shader} ${out_hdr} ${prefix}
-    DEPENDS ${out_shader}
-)
-endmacro()
 
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -61,7 +51,7 @@ set (GENERATED_HEADERS
 add_executable(VulkanFps
 	"${SOURCE}"
 )
-add_dependencies(VulkanFps CreateExtensionFile)
+add_dependencies(VulkanFps CreateExtensionFile Resources)
 target_link_libraries(VulkanFps
     PUBLIC Vulkan::Vulkan
     PUBLIC glfw
