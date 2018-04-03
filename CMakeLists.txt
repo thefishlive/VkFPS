@@ -71,6 +71,11 @@ target_sources(VulkanFps
     PRIVATE ${HEADERS}
     PRIVATE ${GENERATED_SOURCE}
 )
+
+if (WIN32)
+set_target_properties(VulkanFps PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+endif(WIN32)
+
 IF (ENABLE_VK_LAYER_VALIDATION)
     target_compile_definitions(VulkanFps
         PRIVATE ENABLE_VK_LAYER_VALIDATION
