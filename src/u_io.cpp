@@ -24,9 +24,6 @@
 
 #include <iostream>
 
-#define ASSET_PATH "../../resources/"
-#define FILENAME_TO_PATH(name) ASSET_PATH + name
-
 bool read_file(std::string filename, file_data *data)
 {
 	FILE *file;
@@ -36,7 +33,7 @@ bool read_file(std::string filename, file_data *data)
 	void *buffer;
 	size_t length, read_size;
 
-	file = fopen(path.c_str(), "r");
+	file = fopen(path.c_str(), "rb");
 	if (!file)
 	{
 		std::cerr << "Error reading file " << path << " " << std::strerror(errno) << std::endl;
@@ -46,7 +43,7 @@ bool read_file(std::string filename, file_data *data)
 
 	fseek(file, 0, SEEK_END);
 	length = ftell(file);
-	rewind(file);
+	fseek(file, 0, SEEK_SET);
 
 	buffer = malloc(length);
 
@@ -59,9 +56,9 @@ bool read_file(std::string filename, file_data *data)
 
 	read_size = fread(buffer, sizeof(char), length, file);
 
-	if (read_size != length)
+	if (ferror(file) != 0 || length != read_size)
 	{
-		std::cerr << "Error reading file " << path << " " << std::strerror(errno) << std::endl;
+		std::cerr << "Error reading file " << path << " (" << read_size << "!=" << length << ") " << std::strerror(errno) << std::endl;
 		result = false;
 		goto err_out;
 	}
