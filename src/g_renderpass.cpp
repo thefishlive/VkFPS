@@ -22,6 +22,7 @@
 
 #include "g_renderpass.h"
 #include "g_device.h"
+#include "u_debug.h"
 
 GraphicsRenderpass::GraphicsRenderpass(std::shared_ptr<GraphicsDevice>& device) : created(false), device(device)
 {
@@ -37,28 +38,28 @@ GraphicsRenderpass::~GraphicsRenderpass()
 
 void GraphicsRenderpass::add_attachment(vk::AttachmentDescription attachment)
 {
-	assert(!created);
+	DEBUG_ASSERT(!created);
 
 	this->attachments.push_back(attachment);
 }
 
 void GraphicsRenderpass::add_subpass(vk::SubpassDescription subpass)
 {
-	assert(!created);
+	DEBUG_ASSERT(!created);
 
 	this->subpasses.push_back(subpass);
 }
 
 void GraphicsRenderpass::add_subpass_dependency(vk::SubpassDependency dependency)
 {
-	assert(!created);
+	DEBUG_ASSERT(!created);
 
 	this->dependencies.push_back(dependency);
 }
 
 void GraphicsRenderpass::create_renderpass()
 {
-	assert(!created);
+	DEBUG_ASSERT(!created);
 
 	vk::RenderPassCreateInfo create_info(
 		vk::RenderPassCreateFlags(0),
@@ -73,7 +74,7 @@ void GraphicsRenderpass::create_renderpass()
 
 vk::UniqueFramebuffer GraphicsRenderpass::create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const
 {
-	assert(created);
+	DEBUG_ASSERT(created);
 
 	vk::FramebufferCreateInfo create_info(
 		vk::FramebufferCreateFlags(0),
@@ -87,7 +88,7 @@ vk::UniqueFramebuffer GraphicsRenderpass::create_framebuffer(vk::Device device, 
 
 void GraphicsRenderpass::begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const
 {
-	assert(created);
+	DEBUG_ASSERT(created);
 
 	vk::RenderPassBeginInfo info(
 		renderpass,
@@ -101,7 +102,7 @@ void GraphicsRenderpass::begin_renderpass(vk::CommandBuffer command_buffer, vk::
 
 void GraphicsRenderpass::end_renderpass(vk::CommandBuffer command_buffer) const
 {
-	assert(created);
+	DEBUG_ASSERT(created);
 
 	command_buffer.endRenderPass();
 }

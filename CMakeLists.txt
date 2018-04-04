@@ -7,6 +7,10 @@ project (${NAME})
 set (VERSION_MAJOR 1)
 set (VERSION_MINOR 0)
 
+#
+# External dependencies
+#
+
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/build/")
 
 add_subdirectory("external/glfw")
@@ -15,6 +19,10 @@ add_subdirectory("tools")
 
 find_package(Vulkan REQUIRED)
 
+#
+# Project tuneables
+#
+
 OPTION(ENABLE_VK_LAYER_VALIDATION "Enable VK_LAYER_LUNARG_standard_validation layers" OFF)
 OPTION(ENABLE_VK_LAYER_VALIDATION_DEBUG "Enable VK_LAYER_LUNARG_standard_validation debug info" OFF)
 
@@ -22,53 +30,63 @@ OPTION(ENABLE_VK_LAYER_API_DUMP "Enable VK_LAYER_LUNARG_api_dump layer" OFF)
 OPTION(ENABLE_VK_LAYER_ASSISTANT "Enable VK_LAYER_LUNARG_assistant_layer layer" OFF)
 OPTION(ENABLE_VK_LAYER_MONITOR "Enable VK_LAYER_LUNARG_monitor layer" OFF)
 
+OPTION(ENABLE_DEBUG_LOGGING "Enable debug logging of messages" OFF)
+OPTION(ENABLE_DEBUG_ASSERT "Enable debug asserts" OFF)
+
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-set (SOURCE
-    "${SRC_DIR}/vulkan_fps.cpp"
+#
+# Source file macros
+#
 
-    "${SRC_DIR}/g_device.cpp"
-    "${SRC_DIR}/g_devmem.cpp"
-    "${SRC_DIR}/g_pipeline.cpp"
-    "${SRC_DIR}/g_queue.cpp"
-    "${SRC_DIR}/g_renderpass.cpp"
-    "${SRC_DIR}/g_swapchain.cpp"
-    "${SRC_DIR}/g_shader.cpp"
-    "${SRC_DIR}/g_window.cpp"
+macro(add_src file)
+list(APPEND SOURCE "${SRC_DIR}/${file}.cpp")
+endmacro()
 
-    "${SRC_DIR}/r_model.cpp"
-    "${SRC_DIR}/r_material.cpp"
+macro(add_hdr file)
+list(APPEND HEADERS "${INCLUDE_DIR}/${file}.h")
+endmacro()
 
-    "${SRC_DIR}/u_io.cpp"
-)
+macro(add_all file)
+list(APPEND SOURCE "${SRC_DIR}/${file}.cpp")
+list(APPEND HEADERS "${INCLUDE_DIR}/${file}.h")
+endmacro()
+
+#
+# Project source files
+#
+
+add_all("vulkan_fps")
+
+add_all("g_device")
+add_all("g_devmem")
+add_all("g_pipeline")
+add_all("g_queue")
+add_all("g_renderpass")
+add_all("g_swapchain")
+add_all("g_shader")
+add_all("g_window")
+
+add_all("r_model")
+add_all("r_material")
+
+add_all("u_debug")
+add_all("u_io")
+
+add_hdr("r_shaderif")
 
 set (GENERATED_SOURCE
     "${PROJECT_BINARY_DIR}/src/vk_ext.cpp"
 )
 
-set (HEADERS
-    "${INCLUDE_DIR}/vulkan_fps.h"
-
-    "${INCLUDE_DIR}/g_device.h"
-    "${INCLUDE_DIR}/g_devmem.h"
-    "${INCLUDE_DIR}/g_pipeline.h"
-    "${INCLUDE_DIR}/g_queue.h"
-    "${INCLUDE_DIR}/g_renderpass.h"
-    "${INCLUDE_DIR}/g_swapchain.h"
-    "${INCLUDE_DIR}/g_shader.h"
-    "${INCLUDE_DIR}/g_window.h"
-
-    "${INCLUDE_DIR}/r_model.h"
-    "${INCLUDE_DIR}/r_material.h"
-    "${INCLUDE_DIR}/r_shaderif.h"
-    
-    "${INCLUDE_DIR}/u_io.h"
-)
-
 set (GENERATED_HEADERS
     "${PROJECT_BINARY_DIR}/include/vk_ext.h"
 )
+
+#
+# Target setup
+#
 
 add_executable(VulkanFps
     "${SOURCE}"
@@ -96,32 +114,28 @@ if (WIN32)
 set_target_properties(VulkanFps PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif(WIN32)
 
-IF (ENABLE_VK_LAYER_VALIDATION)
-    target_compile_definitions(VulkanFps
-        PRIVATE ENABLE_VK_LAYER_VALIDATION
-    )
-ENDIF (ENABLE_VK_LAYER_VALIDATION)
+macro(compile_define d)
+IF (${d})
+	message(STATUS "Adding c define ${d}")
+	target_compile_definitions(VulkanFps
+		PRIVATE ${d}
+	)
+ENDIF ()
+endmacro()
 
-IF (ENABLE_VK_LAYER_VALIDATION_DEBUG)
-    target_compile_definitions(VulkanFps
-        PRIVATE ENABLE_VK_LAYER_VALIDATION_DEBUG
-    )
-ENDIF (ENABLE_VK_LAYER_VALIDATION_DEBUG)
+#
+# Vulkan layer defines
+#
 
-IF (ENABLE_VK_LAYER_API_DUMP)
-    target_compile_definitions(VulkanFps
-        PRIVATE ENABLE_VK_LAYER_API_DUMP
-    )
-ENDIF (ENABLE_VK_LAYER_API_DUMP)
+compile_define(ENABLE_VK_LAYER_VALIDATION)
+compile_define(ENABLE_VK_LAYER_VALIDATION_DEBUG)
+compile_define(ENABLE_VK_LAYER_API_DUMP)
+compile_define(ENABLE_VK_LAYER_ASSISTANT)
+compile_define(ENABLE_VK_LAYER_MONITOR)
 
-IF (ENABLE_VK_LAYER_ASSISTANT)
-    target_compile_definitions(VulkanFps
-        PRIVATE ENABLE_VK_LAYER_ASSISTANT
-    )
-ENDIF (ENABLE_VK_LAYER_ASSISTANT)
+#
+# Debug defines
+#
 
-IF (ENABLE_VK_LAYER_MONITOR)
-    target_compile_definitions(VulkanFps
-        PRIVATE ENABLE_VK_LAYER_MONITOR
-    )
-ENDIF (ENABLE_VK_LAYER_MONITOR)
+compile_define(ENABLE_DEBUG_LOGGING)
+compile_define(ENABLE_DEBUG_ASSERT)

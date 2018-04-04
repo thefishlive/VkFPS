@@ -3,6 +3,7 @@
 
 #include "g_swapchain.h"
 #include "g_window.h"
+#include "u_debug.h"
 
 GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<GraphicsDevice>& device)
 	: device(device)
@@ -103,7 +104,7 @@ void GraphicsSwapchain::present_image(vk::Device device, uint32_t image_index, v
 
 vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats) const
 {
-	assert(image_formats.size() > 0);
+	DEBUG_ASSERT(image_formats.size() > 0);
 
 	if (image_formats.size() == 1 && image_formats[0].format == vk::Format::eUndefined)
 	{
@@ -122,7 +123,7 @@ vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::Surf
 
 vk::PresentModeKHR GraphicsSwapchain::select_present_mode(std::vector<vk::PresentModeKHR> present_modes) const
 {
-	assert(present_modes.size() > 0);
+	DEBUG_ASSERT(present_modes.size() > 0);
 
 	vk::PresentModeKHR best_mode = vk::PresentModeKHR::eFifo;
 

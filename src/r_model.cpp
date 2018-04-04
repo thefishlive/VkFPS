@@ -22,13 +22,14 @@
 
 #include "r_model.h"
 
-#include "r_material.h"
-#include "u_io.h"
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <sstream>
 
+#include "r_material.h"
+#include "u_debug.h"
+#include "u_io.h"
 Model::Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, GraphicsRenderpass & renderpass, std::string file)
 	: device(device), devmem(devmem), renderpass(renderpass)
 {
@@ -115,9 +116,7 @@ FaceVertexData::FaceVertexData(std::string str)
 void Model::load_material_lib(const std::string& library_file)
 {
 	// FIXME pathify the library_file name
-#ifndef NDEBUG
-	std::cout << "Loading material file " << FILENAME_TO_PATH(library_file) << std::endl;
-#endif
+	LOG_INFO("Loading material file %s", FILENAME_TO_PATH(library_file));
 	std::ifstream fstream(FILENAME_TO_PATH(library_file));
 
 	std::string mat_name;
@@ -231,9 +230,7 @@ void Model::load_material_lib(const std::string& library_file)
 
 void Model::load_model_data(std::string file)
 {
-#ifndef NDEBUG
-	std::cout << "Loading model file " << FILENAME_TO_PATH(file) << std::endl;
-#endif
+	LOG_INFO("Loading model file %s", FILENAME_TO_PATH(file));
 	std::ifstream fstream(FILENAME_TO_PATH(file));
 	std::vector<glm::vec3> verticies;
 	std::vector<glm::vec3> normals;

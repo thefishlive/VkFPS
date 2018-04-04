@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -20,27 +20,40 @@
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
 
-#include "g_pipeline.h"
-#include "u_debug.h"
+#pragma once
 
-GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device)
-	: created(false), device(device)
+typedef enum _LOG_LEVEL_
 {
-}
+	LOG_LEVEL_FATAL,
+	LOG_LEVEL_ERROR,
+	LOG_LEVEL_WARN,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_DEBUG,
+} LOG_LEVEL;
 
-GraphicsPipeline::~GraphicsPipeline()
-{
-	device->device.destroyPipeline(pipeline);
-}
+#ifdef ENABLE_DEBUG_LOGGING
+#define LOG(level, msg, ...) debug_log(level, msg, ##__VA_ARGS__)
 
-void GraphicsPipeline::create_pipeline(vk::GraphicsPipelineCreateInfo create_info)
-{
-	pipeline = device->device.createGraphicsPipeline(vk::PipelineCache(), create_info);
-	created = true;
-}
+void debug_log(LOG_LEVEL level, char *msg, ...);
+#else
+#define LOG(level, msg, ...)
+#endif
 
-void GraphicsPipeline::bind_pipeline(vk::CommandBuffer cmd) const
-{
-	DEBUG_ASSERT(created);
-	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-}
+#define LOG_FATAL(msg, ...) LOG(LOG_LEVEL_FATAL, msg, ##__VA_ARGS__)
+#define LOG_ERROR(msg, ...) LOG(LOG_LEVEL_ERROR, msg, ##__VA_ARGS__)
+#define LOG_WARN(msg, ...) LOG(LOG_LEVEL_WARN, msg, ##__VA_ARGS__)
+#define LOG_INFO(msg, ...) LOG(LOG_LEVEL_INFO, msg, ##__VA_ARGS__)
+#define LOG_DEBUG(msg, ...) LOG(LOG_LEVEL_DEBUG, msg, ##__VA_ARGS__)
+
+#ifdef ENABLE_DEBUG_ASSERT
+#define DEBUG_ASSERT(b) do {                                                     \
+		if (!(b)) {                                                      \
+			debug_assert_fail(#b, __FUNCTION__, __FILE__, __LINE__); \
+		}                                                                \
+	} while(0)
+
+void debug_assert_fail(const char * b, const char *func, const char *file, int line);
+#else
+#define DEBUG_ASSERT(b)
+#endif
+

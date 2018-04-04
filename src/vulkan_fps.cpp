@@ -28,10 +28,11 @@
 #include "g_swapchain.h"
 #include "g_window.h"
 #include "r_model.h"
+#include "u_debug.h"
 
 int main(int argc, char *argv[])
 {
-	std::cout << "Starting vulkan application" << std::endl;
+	LOG_INFO("Starting vulkan application");
 
 	{
 		GraphicsWindow window("Vulkan FPS", 800, 800);
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
 			cmd.end();
 		}
 
-		std::cout << "Setup vulkan application" << std::endl;
+		LOG_INFO("Setup vulkan application");
 
 		// Main window loop
 		while (!window.should_close())
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	std::cout << "destroyed vulkan application" << std::endl;
-	
+	LOG_INFO("Destroyed vulkan application");
+
 	while (true);
 }
