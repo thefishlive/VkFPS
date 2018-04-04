@@ -29,22 +29,23 @@
 class GraphicsSwapchain
 {
 public:
-	GraphicsSwapchain(GraphicsWindow & window, GraphicsDevice & device);
+	GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<GraphicsDevice>& device);
 	~GraphicsSwapchain();
 
 	uint32_t aquire_image(vk::Device device, vk::Semaphore aquire_semaphore) const;
 	void present_image(vk::Device device, uint32_t image_index, vk::Semaphore wait_semaphore) const;
 
 	uint32_t get_image_count() const { return (uint32_t) images.size(); }
-	vk::ImageView get_image_view(uint32_t i) const { return image_views[i].get(); }
+	vk::ImageView get_image_view(uint32_t i) const { return image_views[i]; }
 	vk::Extent2D get_extent() const { return swapchain_extent; }
 	vk::SurfaceFormatKHR get_swapchain_format() const { return swapchain_format; }
 
 private:
-	vk::UniqueSwapchainKHR swapchain;
+	std::shared_ptr<GraphicsDevice>& device;
+	vk::SwapchainKHR swapchain;
 
 	std::vector<vk::Image> images;
-	std::vector<vk::UniqueImageView> image_views;
+	std::vector<vk::ImageView> image_views;
 
 	vk::SurfaceFormatKHR swapchain_format;
 	vk::Extent2D swapchain_extent;

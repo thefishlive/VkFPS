@@ -27,9 +27,19 @@ set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 set (SOURCE
     "${SRC_DIR}/vulkan_fps.cpp"
-	"${SRC_DIR}/g_device.cpp"
+
+    "${SRC_DIR}/g_device.cpp"
+    "${SRC_DIR}/g_devmem.cpp"
     "${SRC_DIR}/g_pipeline.cpp"
     "${SRC_DIR}/g_queue.cpp"
+    "${SRC_DIR}/g_renderpass.cpp"
+    "${SRC_DIR}/g_swapchain.cpp"
+    "${SRC_DIR}/g_shader.cpp"
+    "${SRC_DIR}/g_window.cpp"
+
+    "${SRC_DIR}/r_model.cpp"
+    "${SRC_DIR}/r_material.cpp"
+
     "${SRC_DIR}/u_io.cpp"
 )
 
@@ -39,10 +49,20 @@ set (GENERATED_SOURCE
 
 set (HEADERS
     "${INCLUDE_DIR}/vulkan_fps.h"
+
     "${INCLUDE_DIR}/g_device.h"
+    "${INCLUDE_DIR}/g_devmem.h"
     "${INCLUDE_DIR}/g_pipeline.h"
     "${INCLUDE_DIR}/g_queue.h"
-    "${INCLUDE_DIR}/vk_ext_internal.h"
+    "${INCLUDE_DIR}/g_renderpass.h"
+    "${INCLUDE_DIR}/g_swapchain.h"
+    "${INCLUDE_DIR}/g_shader.h"
+    "${INCLUDE_DIR}/g_window.h"
+
+    "${INCLUDE_DIR}/r_model.h"
+    "${INCLUDE_DIR}/r_material.h"
+    "${INCLUDE_DIR}/r_shaderif.h"
+    
     "${INCLUDE_DIR}/u_io.h"
 )
 

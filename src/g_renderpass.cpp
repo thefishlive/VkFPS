@@ -21,13 +21,18 @@
 ******************************************************************************/
 
 #include "g_renderpass.h"
+#include "g_device.h"
 
-GraphicsRenderpass::GraphicsRenderpass() : created(false)
+GraphicsRenderpass::GraphicsRenderpass(std::shared_ptr<GraphicsDevice>& device) : created(false), device(device)
 {
 }
 
 GraphicsRenderpass::~GraphicsRenderpass()
 {
+	if (created)
+	{
+		parent.destroyRenderPass(renderpass);
+	}
 }
 
 void GraphicsRenderpass::add_attachment(vk::AttachmentDescription attachment)
@@ -46,11 +51,15 @@ void GraphicsRenderpass::add_subpass(vk::SubpassDescription subpass)
 
 void GraphicsRenderpass::add_subpass_dependency(vk::SubpassDependency dependency)
 {
+	assert(!created);
+
 	this->dependencies.push_back(dependency);
 }
 
-void GraphicsRenderpass::create_renderpass(vk::Device device)
+void GraphicsRenderpass::create_renderpass()
 {
+	assert(!created);
+
 	vk::RenderPassCreateInfo create_info(
 		vk::RenderPassCreateFlags(0),
 		(uint32_t)attachments.size(), attachments.data(),
@@ -58,17 +67,17 @@ void GraphicsRenderpass::create_renderpass(vk::Device device)
 		(uint32_t)dependencies.size(), dependencies.data()
 	);
 
-	renderpass = device.createRenderPassUnique(create_info);
+	renderpass = device->device.createRenderPass(create_info);
 	created = true;
 }
 
-vk::UniqueFramebuffer GraphicsRenderpass::create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent)
+vk::UniqueFramebuffer GraphicsRenderpass::create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const
 {
 	assert(created);
 
 	vk::FramebufferCreateInfo create_info(
 		vk::FramebufferCreateFlags(0),
-		renderpass.get(),
+		renderpass,
 		(uint32_t)image_views.size(), image_views.data(),
 		extent.width, extent.height, 1
 	);
@@ -76,12 +85,12 @@ vk::UniqueFramebuffer GraphicsRenderpass::create_framebuffer(vk::Device device, 
 	return device.createFramebufferUnique(create_info);
 }
 
-void GraphicsRenderpass::begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values)
+void GraphicsRenderpass::begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const
 {
 	assert(created);
 
 	vk::RenderPassBeginInfo info(
-		renderpass.get(),
+		renderpass,
 		framebuffer,
 		render_area,
 		(uint32_t)clear_values.size(), clear_values.data()

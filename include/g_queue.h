@@ -23,19 +23,25 @@
 
 #include <vulkan/vulkan.hpp>
 
+class GraphicsDevice;
+
 class GraphicsQueue
 {
 public:
-	GraphicsQueue() {}
-	explicit GraphicsQueue(vk::Device device, uint32_t queue_index);
+	explicit GraphicsQueue();
+	GraphicsQueue(GraphicsQueue & queue) = delete;
 	~GraphicsQueue();
 
-	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, uint32_t count) const;
+	void init_queue(vk::Device device, uint32_t queue_index);
+
+	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
 
 	void submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::UniqueSemaphore & check_semaphore, vk::UniqueSemaphore & update_semaphore) const;
 
 	vk::Queue queue;
 
 private:
+	vk::Device device;
+
 	vk::CommandPool command_pool;
 };

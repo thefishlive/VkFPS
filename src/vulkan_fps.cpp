@@ -23,11 +23,11 @@
 #include <iostream>
 
 #include "g_device.h"
+#include "g_devmem.h"
 #include "g_renderpass.h"
 #include "g_swapchain.h"
 #include "g_window.h"
-
-class GraphicsRenderpass;
+#include "r_model.h"
 
 int main(int argc, char *argv[])
 {
@@ -35,15 +35,17 @@ int main(int argc, char *argv[])
 
 	{
 		GraphicsWindow window("Vulkan FPS", 800, 800);
-		GraphicsDevice device(window);
+		std::shared_ptr<GraphicsDevice> device = std::make_shared<GraphicsDevice>(window);
+
 		GraphicsSwapchain swapchain(window, device);
+		GraphicsDevmem devmem(device);
+		
+		std::vector<vk::UniqueCommandBuffer> command_buffers = device->graphics_queue.allocate_command_buffers(swapchain.get_image_count());
 
-		std::vector<vk::UniqueCommandBuffer> command_buffers = device.graphics_queue.allocate_command_buffers(device.device.get(), swapchain.get_image_count());
+		vk::UniqueSemaphore acquire_semaphore = device->create_semaphore();
+		vk::UniqueSemaphore release_semaphore = device->create_semaphore();
 
-		vk::UniqueSemaphore acquire_semaphore = device.create_semaphore();
-		vk::UniqueSemaphore release_semaphore = device.create_semaphore();
-
-		GraphicsRenderpass renderpass;
+		GraphicsRenderpass renderpass(device);
 		renderpass.add_attachment(vk::AttachmentDescription(
 			vk::AttachmentDescriptionFlags(0),
 			swapchain.get_swapchain_format().format, vk::SampleCountFlagBits::e1, 
@@ -65,32 +67,37 @@ int main(int argc, char *argv[])
 			vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 			vk::AccessFlags(0), vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
 		));
-		renderpass.create_renderpass(device.device.get());
+		renderpass.create_renderpass();
 
 		std::vector<vk::UniqueFramebuffer> framebuffers;
 
 		for (uint32_t i = 0; i < swapchain.get_image_count(); i++)
 		{
 			std::vector<vk::ImageView> views = { swapchain.get_image_view(i) };
-			framebuffers.push_back(renderpass.create_framebuffer(device.device.get(), views, swapchain.get_extent()));
+			framebuffers.push_back(renderpass.create_framebuffer(device->device, views, swapchain.get_extent()));
 		}
 
+		Model sphere_model(device, devmem, renderpass, "models/sphere.obj");
+
 		vk::Rect2D screen_area(vk::Offset2D(0, 0), swapchain.get_extent());
-		std::vector<vk::ClearValue> clear_values = { vk::ClearColorValue(std::array<float, 4>{1.0f, 0.0f, 0.0f, 0.0f }) };
+		std::vector<vk::ClearValue> clear_values = { vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f }) };
 		
 		// Record command buffers
 		for (uint32_t i = 0; i < swapchain.get_image_count(); i++)
 		{
-			vk::CommandBuffer buffer = command_buffers[i].get();
-			buffer.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr));
+			vk::CommandBuffer cmd = command_buffers[i].get();
+			cmd.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr));
 
-			renderpass.begin_renderpass(buffer, framebuffers[i].get(), screen_area, clear_values);
+			renderpass.begin_renderpass(cmd, framebuffers[i].get(), screen_area, clear_values);
 			{
+				cmd.setViewport(0, { vk::Viewport(0, 0, 800, 800) });
+				cmd.setScissor(0, { vk::Rect2D({0, 0}, {800, 800}) });
 
+				sphere_model.render(cmd);
 			}
-			renderpass.end_renderpass(buffer);
+			renderpass.end_renderpass(cmd);
 
-			buffer.end();
+			cmd.end();
 		}
 
 		std::cout << "Setup vulkan application" << std::endl;
@@ -100,13 +107,13 @@ int main(int argc, char *argv[])
 		{
 			window.poll_events();
 
-			device.device.get().waitIdle();
+			device->device.waitIdle();
 
-			uint32_t image = swapchain.aquire_image(device.device.get(), acquire_semaphore.get());
+			uint32_t image = swapchain.aquire_image(device->device, acquire_semaphore.get());
 
-			device.graphics_queue.submit_commands(std::vector<vk::CommandBuffer>{command_buffers[image].get()}, acquire_semaphore, release_semaphore);
+			device->graphics_queue.submit_commands(std::vector<vk::CommandBuffer>{command_buffers[image].get()}, acquire_semaphore, release_semaphore);
 
-			swapchain.present_image(device.device.get(), image, release_semaphore.get());
+			swapchain.present_image(device->device, image, release_semaphore.get());
 		}
 	}
 

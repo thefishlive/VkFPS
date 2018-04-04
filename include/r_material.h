@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,44 +19,27 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
-#include <memory>
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
+#include "g_device.h"
+#include "g_pipeline.h"
+#include "r_shaderif.h"
 
-struct QueueFamilyIndicies
-{
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
-	{
-		return graphics_queue != -1 && present_queue != -1;
-	}
-};
-
-class GraphicsDevice
+class Material
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	GraphicsDevice(GraphicsDevice & device) = delete;
-	~GraphicsDevice();
+	Material(std::shared_ptr<GraphicsDevice>& device, GraphicsRenderpass &renderpass, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float alpha);
+	~Material();
 
-	vk::Instance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::Device device;
-
-	vk::UniqueSemaphore create_semaphore() const;
-
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
+	void bind_material(vk::CommandBuffer buffer) const;
 
 private:
-	vk::DebugReportCallbackEXT debug_report_callback;
+	std::shared_ptr<GraphicsDevice>& device;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	GraphicsPipeline pipeline;
+	vk::PipelineLayout pipeline_layout;
 };

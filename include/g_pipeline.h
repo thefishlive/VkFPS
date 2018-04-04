@@ -23,14 +23,22 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "g_device.h"
+#include "g_renderpass.h"
+
 class GraphicsPipeline
 {
 public:
-	GraphicsPipeline();
+	GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device);
 	~GraphicsPipeline();
 
-	void Build();
-	
+	void create_pipeline(vk::GraphicsPipelineCreateInfo create_info);
+
+	void bind_pipeline(vk::CommandBuffer cmd) const;
+
 private:
-	vk::Pipeline m_pipeline;
+	bool created;
+	std::shared_ptr<GraphicsDevice>& device;
+
+	vk::Pipeline pipeline;
 };

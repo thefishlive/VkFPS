@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,44 +19,55 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
-#include <memory>
+#include <glm/glm.hpp>
+#include <map>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
+#include "g_device.h"
+#include "g_devmem.h"
+#include "g_renderpass.h"
+#include "r_material.h"
+#include "r_shaderif.h"
 
-struct QueueFamilyIndicies
+struct MaterialData
 {
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
+	std::unique_ptr<Material> material;
+	std::vector<uint32_t> indicies;
+	uint32_t start_index;
 
-	bool is_complete() const
+	explicit MaterialData(std::unique_ptr<Material> & material, const std::vector<uint32_t>& indicies = std::vector<uint32_t>(), uint32_t start_index = 0)
+		: material(std::move(material)),
+		indicies(indicies),
+		start_index(start_index)
 	{
-		return graphics_queue != -1 && present_queue != -1;
 	}
 };
 
-class GraphicsDevice
+class Model
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	GraphicsDevice(GraphicsDevice & device) = delete;
-	~GraphicsDevice();
+	Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, GraphicsRenderpass & renderpass, std::string file);
+	~Model();
 
-	vk::Instance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::Device device;
-
-	vk::UniqueSemaphore create_semaphore() const;
-
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
+	void render(vk::CommandBuffer command_buffer);
 
 private:
-	vk::DebugReportCallbackEXT debug_report_callback;
+	std::shared_ptr<GraphicsDevice>& device;
+	GraphicsDevmem devmem;
+	GraphicsRenderpass renderpass;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	std::vector<Vertex> verticies;
+	std::map<std::string, std::unique_ptr<MaterialData>> materials;
+
+	uint32_t index_count;
+
+	GraphicsDevmemBuffer *vertex_buffer;
+	GraphicsDevmemBuffer *index_buffer;
+
+	void load_material_lib(const std::string& library_file);
+	void load_model_data(std::string file);
+	static std::string get_library_path(const std::string& library, const std::string& file);
 };

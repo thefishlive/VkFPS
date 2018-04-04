@@ -21,12 +21,13 @@
 ******************************************************************************/
 #pragma once
 
+#include "g_device.h"
 #include <vulkan/vulkan.hpp>
 
 class GraphicsRenderpass
 {
 public:
-	GraphicsRenderpass();
+	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
 	~GraphicsRenderpass();
 
 	void add_attachment(vk::AttachmentDescription attachment);
@@ -34,16 +35,21 @@ public:
 	void add_subpass(vk::SubpassDescription subpass);
 	void add_subpass_dependency(vk::SubpassDependency dependency);
 
-	void create_renderpass(vk::Device);
+	void create_renderpass();
 
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent);
+	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
 
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values);
+	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
 	void end_renderpass(vk::CommandBuffer command_buffer) const;
+
+	explicit operator vk::RenderPass() const { return renderpass; }
 
 private:
 	bool created;
-	vk::UniqueRenderPass renderpass;
+	std::shared_ptr<GraphicsDevice> device;
+
+	vk::Device parent;
+	vk::RenderPass renderpass;
 
 	std::vector<vk::AttachmentDescription> attachments;
 	std::vector<vk::SubpassDescription> subpasses;

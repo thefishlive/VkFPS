@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,44 +19,56 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
-#include <memory>
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
-
-struct QueueFamilyIndicies
+struct Vertex
 {
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
+	glm::vec4 position;
+	glm::vec4 normal;
+	glm::vec4 color;
 
-	bool is_complete() const
+	Vertex(glm::vec4 position, glm::vec4 normal, glm::vec4 color = { 1, 1, 1, 1 }) : position(position), normal(normal), color(color) {}
+	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec4 color = { 1, 1, 1, 1 }) : position(glm::vec4(position, 1.0)), normal(glm::vec4(normal, 1.0)), color(color) {}
+
+	static std::vector<vk::VertexInputAttributeDescription> get_vertex_input_attributes()
 	{
-		return graphics_queue != -1 && present_queue != -1;
+		return std::vector<vk::VertexInputAttributeDescription>{
+			vk::VertexInputAttributeDescription(
+				0, 0, 
+				vk::Format::eR32G32B32A32Sfloat,
+				offsetof(Vertex, position)
+			),
+			vk::VertexInputAttributeDescription(
+				1, 0,
+				vk::Format::eR32G32B32A32Sfloat,
+				offsetof(Vertex, normal)
+			),
+			vk::VertexInputAttributeDescription(
+				2, 0,
+				vk::Format::eR32G32B32A32Sfloat,
+				offsetof(Vertex, color)
+			)
+		};
+	}
+
+	static std::vector<vk::VertexInputBindingDescription> get_vertex_input_bindings()
+	{
+		return std::vector<vk::VertexInputBindingDescription>{
+			vk::VertexInputBindingDescription(
+				0, sizeof(Vertex), vk::VertexInputRate::eVertex
+			)
+		};		
 	}
 };
 
-class GraphicsDevice
+struct MaterialShaderData
 {
-public:
-	GraphicsDevice(GraphicsWindow & window);
-	GraphicsDevice(GraphicsDevice & device) = delete;
-	~GraphicsDevice();
-
-	vk::Instance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::Device device;
-
-	vk::UniqueSemaphore create_semaphore() const;
-
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
-
-private:
-	vk::DebugReportCallbackEXT debug_report_callback;
-
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	glm::vec4 ambient;
+	glm::vec4 diffuse;
+	glm::vec4 specular;
+	float alpha;
 };

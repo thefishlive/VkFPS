@@ -56,7 +56,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	const char* msg,
 	void* userData)
 {
-	std::cerr << "Validation Error: " << layerPrefix << ": " << msg << std::endl;
+	std::cerr << layerPrefix << ": " << msg << std::endl;
 	return VK_FALSE;
 }
 
@@ -102,9 +102,9 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 		(uint32_t) instance_extensions.size(), instance_extensions.data()
 	);
 
-	instance = vk::createInstanceUnique(create_info);
+	instance = vk::createInstance(create_info);
 
-	debug_report_callback = instance.get().createDebugReportCallbackEXTUnique(vk::DebugReportCallbackCreateInfoEXT(
+	debug_report_callback = instance.createDebugReportCallbackEXT(vk::DebugReportCallbackCreateInfoEXT(
 		vk::DebugReportFlagBitsEXT::eError |
 		vk::DebugReportFlagBitsEXT::eWarning |
 		vk::DebugReportFlagBitsEXT::ePerformanceWarning |
@@ -112,7 +112,7 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 		&debug_callback
 	));
 
-	vk::SurfaceKHR surface = window.create_surface(instance.get());
+	vk::SurfaceKHR surface = window.create_surface(instance);
 
 	// Select physical device
 	QueueFamilyIndicies queue_data;
@@ -146,19 +146,23 @@ GraphicsDevice::GraphicsDevice(GraphicsWindow & window)
 		&physical_device_feature
 	);
 
-	device = physical_deivce.createDeviceUnique(device_create_info, nullptr);
+	device = physical_deivce.createDevice(device_create_info, nullptr);
 
-	graphics_queue = GraphicsQueue(device.get(), queue_data.graphics_queue);
-	present_queue = GraphicsQueue(device.get(), queue_data.present_queue);
+	graphics_queue.init_queue(device, queue_data.graphics_queue);
+	present_queue.init_queue(device, queue_data.present_queue);
 }
 
 GraphicsDevice::~GraphicsDevice()
 {
+	device.destroy();
+
+	instance.destroyDebugReportCallbackEXT(debug_report_callback);
+	instance.destroy();
 }
 
-vk::UniqueSemaphore GraphicsDevice::create_semaphore()
+vk::UniqueSemaphore GraphicsDevice::create_semaphore() const
 {
-	return device.get().createSemaphoreUnique(vk::SemaphoreCreateInfo(
+	return device.createSemaphoreUnique(vk::SemaphoreCreateInfo(
 		vk::SemaphoreCreateFlags(0)
 	));
 }
@@ -192,7 +196,7 @@ bool GraphicsDevice::is_device_suitable(vk::PhysicalDevice physical_device, vk::
 vk::PhysicalDevice GraphicsDevice::select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const
 {
 	// TODO Better grading of devices
-	auto physical_devices = this->instance->enumeratePhysicalDevices();
+	auto physical_devices = this->instance.enumeratePhysicalDevices();
 
 	for (auto const& physical_device : physical_devices) 
 	{

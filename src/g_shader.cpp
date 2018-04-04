@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,44 +19,30 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-#pragma once
 
-#include <memory>
-#include <vulkan/vulkan.hpp>
+#include "g_shader.h"
 
-#include "g_queue.h"
-#include "g_window.h"
+#include "u_io.h"
 
-struct QueueFamilyIndicies
+GraphicsShader::GraphicsShader(std::shared_ptr<GraphicsDevice>& device, std::string shader_file)
+	: device(device)
 {
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
+	file_data data;
+	if (!read_file(shader_file + ".spv", &data))
 	{
-		return graphics_queue != -1 && present_queue != -1;
+		throw std::exception("Error creating shader");
 	}
-};
 
-class GraphicsDevice
+	vk::ShaderModuleCreateInfo create_info(
+		vk::ShaderModuleCreateFlags(0),
+		data.size,
+		(uint32_t *)data.data
+	);
+
+	shader = device->device.createShaderModule(create_info);
+}
+
+GraphicsShader::~GraphicsShader()
 {
-public:
-	GraphicsDevice(GraphicsWindow & window);
-	GraphicsDevice(GraphicsDevice & device) = delete;
-	~GraphicsDevice();
-
-	vk::Instance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::Device device;
-
-	vk::UniqueSemaphore create_semaphore() const;
-
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
-
-private:
-	vk::DebugReportCallbackEXT debug_report_callback;
-
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-};
+	device->device.destroyShaderModule(shader);
+}

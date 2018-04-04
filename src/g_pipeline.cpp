@@ -19,3 +19,27 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
+#include "g_pipeline.h"
+
+GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device)
+	: created(false), device(device)
+{
+}
+
+GraphicsPipeline::~GraphicsPipeline()
+{
+	device->device.destroyPipeline(pipeline);
+}
+
+void GraphicsPipeline::create_pipeline(vk::GraphicsPipelineCreateInfo create_info)
+{
+	pipeline = device->device.createGraphicsPipeline(vk::PipelineCache(), create_info);
+	created = true;
+}
+
+void GraphicsPipeline::bind_pipeline(vk::CommandBuffer cmd) const
+{
+	assert(created);
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+}

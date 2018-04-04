@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -19,44 +19,42 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
-#include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "g_queue.h"
-#include "g_window.h"
+#include "g_device.h"
+#include "vk_mem_alloc.h"
 
-struct QueueFamilyIndicies
-{
-	uint32_t graphics_queue = -1;
-	uint32_t present_queue = -1;
-
-	bool is_complete() const
-	{
-		return graphics_queue != -1 && present_queue != -1;
-	}
-};
-
-class GraphicsDevice
+class GraphicsDevmemBuffer
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
-	GraphicsDevice(GraphicsDevice & device) = delete;
-	~GraphicsDevice();
+	GraphicsDevmemBuffer() : allocator(), allocation() {}
+	GraphicsDevmemBuffer(VmaAllocator allocator, VkBuffer buffer, VmaAllocation allocation);
+	~GraphicsDevmemBuffer();
 
-	vk::Instance instance;
-	vk::PhysicalDevice physical_deivce;
-	vk::Device device;
+	void map_buffer(void **data) const;
+	void unmap_buffer() const;
 
-	vk::UniqueSemaphore create_semaphore() const;
-
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
+	vk::Buffer buffer;
 
 private:
-	vk::DebugReportCallbackEXT debug_report_callback;
+	VmaAllocator allocator;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
-	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	VmaAllocation allocation;
+};
+
+class GraphicsDevmem
+{
+public:
+	GraphicsDevmem(std::shared_ptr<GraphicsDevice>& device);
+	~GraphicsDevmem();
+
+	GraphicsDevmemBuffer* create_buffer(vk::BufferCreateInfo buffer_create_info, VmaAllocationCreateInfo alloc_create_info) const;
+
+private:
+	std::shared_ptr<GraphicsDevice> device;
+
+	VmaAllocator allocator;
 };

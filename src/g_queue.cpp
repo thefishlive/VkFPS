@@ -1,4 +1,3 @@
-#include "..\include\g_queue.h"
 /******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
@@ -21,21 +20,36 @@
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
 
-GraphicsQueue::GraphicsQueue(vk::Device device, uint32_t queue_index) : queue(device.getQueue(queue_index, 0))
+#include "g_queue.h"
+
+#include "g_device.h"
+
+GraphicsQueue::GraphicsQueue()
 {
+}
+
+GraphicsQueue::~GraphicsQueue()
+{
+	if ((VkDevice) device != VK_NULL_HANDLE)
+	{
+		device.destroyCommandPool(command_pool);
+	}
+}
+
+void GraphicsQueue::init_queue(vk::Device device, uint32_t queue_index)
+{
+	this->device = device;
+	this->queue = device.getQueue(queue_index, 0);
+
 	vk::CommandPoolCreateInfo create_info(
 		vk::CommandPoolCreateFlags(0),
 		queue_index
 	);
 
-	command_pool = device.createCommandPool(create_info);
+	this->command_pool = device.createCommandPool(create_info);
 }
 
-GraphicsQueue::~GraphicsQueue()
-{
-}
-
-std::vector<vk::UniqueCommandBuffer> GraphicsQueue::allocate_command_buffers(vk::Device device, uint32_t count) const
+std::vector<vk::UniqueCommandBuffer> GraphicsQueue::allocate_command_buffers(uint32_t count) const
 {
 	vk::CommandBufferAllocateInfo info(
 		command_pool,
