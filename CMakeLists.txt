@@ -41,16 +41,36 @@ set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 #
 
 macro(add_src file)
-list(APPEND SOURCE "${SRC_DIR}/${file}.cpp")
+	list(APPEND SOURCE "${SRC_DIR}/${file}.cpp")
+
+	if (${file} MATCHES "^r_")
+		list(APPEND RENDER_SOURCE "${SRC_DIR}/${file}.cpp")
+	elseif (${file} MATCHES "^g_")
+		list(APPEND GRAPHICS_SOURCE "${SRC_DIR}/${file}.cpp")
+	elseif (${file} MATCHES "^u_")
+		list(APPEND UTILS_SOURCE "${SRC_DIR}/${file}.cpp")
+	else()
+		message(ERROR " File ${file} is not a match for any soruce group")
+	endif()
 endmacro()
 
 macro(add_hdr file)
-list(APPEND HEADERS "${INCLUDE_DIR}/${file}.h")
+	list(APPEND HEADERS "${INCLUDE_DIR}/${file}.h")
+
+	if (${file} MATCHES "^r_")
+		list(APPEND RENDER_HEADERS "${INCLUDE_DIR}/${file}.h")
+	elseif (${file} MATCHES "^g_")
+		list(APPEND GRAPHICS_HEADERS "${INCLUDE_DIR}/${file}.h")
+	elseif (${file} MATCHES "^u_")
+		list(APPEND UTILS_HEADERS "${INCLUDE_DIR}/${file}.h")
+	else()
+		message(ERROR " File ${file} is not a match for any soruce group")
+	endif()
 endmacro()
 
 macro(add_all file)
-list(APPEND SOURCE "${SRC_DIR}/${file}.cpp")
-list(APPEND HEADERS "${INCLUDE_DIR}/${file}.h")
+	add_src(${file})
+	add_hdr(${file})
 endmacro()
 
 #
@@ -112,6 +132,13 @@ target_sources(VulkanFps
     PRIVATE ${HEADERS}
     PRIVATE ${GENERATED_SOURCE}
 )
+
+source_group("Render\\Source Files" FILES ${RENDER_SOURCE})
+source_group("Graphics\\Source Files" FILES ${GRAPHICS_SOURCE})
+source_group("Utils\\Source Files" FILES ${UTILS_SOURCE})
+source_group("Render\\Header Files" FILES ${RENDER_HEADERS})
+source_group("Graphics\\Header Files" FILES ${GRAPHICS_HEADERS})
+source_group("Utils\\Header Files" FILES ${UTILS_HEADERS})
 
 if (WIN32)
 set_target_properties(VulkanFps PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
