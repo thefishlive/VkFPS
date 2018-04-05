@@ -68,6 +68,7 @@ add_all("g_swapchain")
 add_all("g_shader")
 add_all("g_window")
 
+add_all("r_camera")
 add_all("r_model")
 add_all("r_material")
 
@@ -75,6 +76,8 @@ add_all("u_debug")
 add_all("u_io")
 
 add_hdr("r_shaderif")
+
+add_hdr("u_defines")
 
 set (GENERATED_SOURCE
     "${PROJECT_BINARY_DIR}/src/vk_ext.cpp"

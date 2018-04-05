@@ -20,10 +20,15 @@
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
 #include "g_device.h"
-#include "GLFW/glfw3.h"
-#include "g_window.h"
+
 #include <iostream>
 #include <set>
+
+#include <GLFW/glfw3.h>
+
+#include "g_window.h"
+#include "u_debug.h"
+#include "u_defines.h"
 
 VkResult vkCreateDebugReportCallbackEXT(
 	VkInstance instance,
@@ -33,6 +38,10 @@ VkResult vkCreateDebugReportCallbackEXT(
 )
 {
 	PFN_vkCreateDebugReportCallbackEXT func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+	if (!func)
+	{
+		return VK_SUCCESS;
+	}
 	return func(instance, pCreateInfo, pAllocator, pCallback);
 }
 
@@ -43,6 +52,10 @@ void vkDestroyDebugReportCallbackEXT(
 )
 {
 	PFN_vkDestroyDebugReportCallbackEXT func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+	if (!func)
+	{
+		return;
+	}
 	return func(instance, callback, pAllocator);
 }
 
@@ -56,7 +69,17 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 	const char* msg,
 	void* userData)
 {
-	std::cerr << layerPrefix << ": " << msg << std::endl;
+	if (BITMASK_HAS(flags, VK_DEBUG_REPORT_WARNING_BIT_EXT) ||
+		BITMASK_HAS(flags, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) ||
+		BITMASK_HAS(flags, VK_DEBUG_REPORT_ERROR_BIT_EXT))
+	{
+		LOG_ERROR("%s:%s", layerPrefix, msg);
+	}
+	else
+	{
+		LOG_INFO("%s:%s", layerPrefix, msg);
+	}
+
 	return VK_FALSE;
 }
 
