@@ -24,21 +24,23 @@
 #include <vulkan/vulkan.hpp>
 
 #include "g_device.h"
-#include "g_renderpass.h"
 
 class GraphicsPipeline
 {
 public:
-	GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device);
+	GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout);
 	~GraphicsPipeline();
 
-	void create_pipeline(vk::GraphicsPipelineCreateInfo create_info);
-
 	void bind_pipeline(vk::CommandBuffer cmd) const;
+	void push_shader_data(vk::CommandBuffer cmd, int offset, vk::ShaderStageFlagBits stage, size_t size, void* data) const;
+
+	void update_descriptor_sets(std::vector<vk::WriteDescriptorSet> writes) const;
 
 private:
-	bool created;
 	std::shared_ptr<GraphicsDevice>& device;
 
 	vk::Pipeline pipeline;
+	vk::PipelineLayout pipeline_layout;
+	vk::DescriptorSet descriptor_set;
+	vk::DescriptorSetLayout descriptor_set_layout;
 };

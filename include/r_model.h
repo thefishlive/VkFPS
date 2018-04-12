@@ -49,15 +49,19 @@ struct MaterialData
 class Model
 {
 public:
-	Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, GraphicsRenderpass & renderpass, std::string file);
+	Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, GraphicsRenderpass & renderpass, std::string file);
 	~Model();
+
+	void set_position(glm::vec3 & position) { this->position = position; }
 
 	void render(vk::CommandBuffer command_buffer);
 
 private:
 	std::shared_ptr<GraphicsDevice>& device;
-	GraphicsDevmem devmem;
+	std::shared_ptr<GraphicsDevmem> devmem;
 	GraphicsRenderpass renderpass;
+
+	glm::vec3 position;
 
 	std::vector<Vertex> verticies;
 	std::map<std::string, std::unique_ptr<MaterialData>> materials;

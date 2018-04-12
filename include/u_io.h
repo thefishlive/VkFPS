@@ -25,7 +25,7 @@
 #include <string>
 
 #define ASSET_PATH "./resources/"
-#define FILENAME_TO_PATH(name) ASSET_PATH + name
+#define FILENAME_TO_PATH(name) (ASSET_PATH + name)
 
 struct file_data
 {

@@ -21,8 +21,10 @@
 ******************************************************************************/
 #pragma once
 
-#include "g_device.h"
 #include <vulkan/vulkan.hpp>
+
+#include "g_device.h"
+#include "g_pipeline.h"
 
 class GraphicsRenderpass
 {
@@ -42,6 +44,8 @@ public:
 	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
 	void end_renderpass(vk::CommandBuffer command_buffer) const;
 
+	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
+
 	explicit operator vk::RenderPass() const { return renderpass; }
 
 private:
@@ -50,6 +54,7 @@ private:
 
 	vk::Device parent;
 	vk::RenderPass renderpass;
+	vk::DescriptorPool descriptor_pool;
 
 	std::vector<vk::AttachmentDescription> attachments;
 	std::vector<vk::SubpassDescription> subpasses;

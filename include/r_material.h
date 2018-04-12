@@ -27,19 +27,22 @@
 
 #include "g_device.h"
 #include "g_pipeline.h"
+#include "g_renderpass.h"
 #include "r_shaderif.h"
 
 class Material
 {
 public:
-	Material(std::shared_ptr<GraphicsDevice>& device, GraphicsRenderpass &renderpass, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float alpha);
+	Material(std::shared_ptr<GraphicsDevice>& device, GraphicsRenderpass &renderpass, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, float alpha);
 	~Material();
 
 	void bind_material(vk::CommandBuffer buffer) const;
+	void push_shader_data(vk::CommandBuffer cmd, int binding, vk::ShaderStageFlagBits stage, size_t size, void* data) const;
 
 private:
 	std::shared_ptr<GraphicsDevice>& device;
 
-	GraphicsPipeline pipeline;
-	vk::PipelineLayout pipeline_layout;
+	std::unique_ptr<GraphicsPipeline> pipeline;
+
+	MaterialShaderData shader_data;
 };

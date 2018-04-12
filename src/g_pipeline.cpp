@@ -21,26 +21,39 @@
 ******************************************************************************/
 
 #include "g_pipeline.h"
+
 #include "u_debug.h"
 
-GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device)
-	: created(false), device(device)
+GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout)
+	:  device(device), pipeline_layout(pipeline_layout), descriptor_set(descriptor_set), descriptor_set_layout(descriptor_set_layout)
 {
+	pipeline = device->device.createGraphicsPipeline(vk::PipelineCache(), create_info);
 }
 
 GraphicsPipeline::~GraphicsPipeline()
 {
 	device->device.destroyPipeline(pipeline);
-}
-
-void GraphicsPipeline::create_pipeline(vk::GraphicsPipelineCreateInfo create_info)
-{
-	pipeline = device->device.createGraphicsPipeline(vk::PipelineCache(), create_info);
-	created = true;
+	device->device.destroyPipelineLayout(pipeline_layout);
+	device->device.destroyDescriptorSetLayout(descriptor_set_layout);
 }
 
 void GraphicsPipeline::bind_pipeline(vk::CommandBuffer cmd) const
 {
-	DEBUG_ASSERT(created);
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
+}
+
+void GraphicsPipeline::push_shader_data(vk::CommandBuffer cmd, int offset, vk::ShaderStageFlagBits stage, size_t size, void* data) const
+{
+	cmd.pushConstants(pipeline_layout, stage, offset, (uint32_t)size, data);
+}
+
+void GraphicsPipeline::update_descriptor_sets(std::vector<vk::WriteDescriptorSet> writes) const
+{
+	for (auto &write : writes)
+	{
+		write.dstSet = descriptor_set;
+	}
+
+	device->device.updateDescriptorSets(writes, {});
 }

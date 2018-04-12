@@ -27,11 +27,17 @@
 #include <map>
 #include <sstream>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
+
+#include "r_camera.h"
 #include "r_material.h"
 #include "u_debug.h"
 #include "u_io.h"
-Model::Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, GraphicsRenderpass & renderpass, std::string file)
-	: device(device), devmem(devmem), renderpass(renderpass)
+
+Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, GraphicsRenderpass & renderpass, std::string file)
+	: device(device), devmem(devmem), renderpass(renderpass), position(0, 0, 0)
 {
 	load_model_data(file);
 
@@ -46,7 +52,7 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, G
 	vbuf_alloc_info.flags = 0;
 	vbuf_alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	vertex_buffer = devmem.create_buffer(vbuf_create_info, vbuf_alloc_info);
+	vertex_buffer = devmem->create_buffer(vbuf_create_info, vbuf_alloc_info);
 	
 	void *data;
 	vertex_buffer->map_buffer(&data);
@@ -64,7 +70,7 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, GraphicsDevmem & devmem, G
 	ibuf_alloc_info.flags = 0;
 	ibuf_alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	index_buffer = devmem.create_buffer(ibuf_create_info, ibuf_alloc_info);
+	index_buffer = devmem->create_buffer(ibuf_create_info, ibuf_alloc_info);
 
 	index_buffer->map_buffer(&data);
 	for (const auto & material : materials)
@@ -88,9 +94,13 @@ void Model::render(vk::CommandBuffer cmd)
 	cmd.bindVertexBuffers(0, (uint32_t) vbufs.size(), vbufs.data(), voffsets.data());
 	cmd.bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint32);
 
+	glm::mat4 translation = glm::translate(glm::mat4(1), position);
+	VertexShaderData shader_data(translation);
+
 	for (const auto & data : materials)
 	{
 		data.second->material->bind_material(cmd);
+		data.second->material->push_shader_data(cmd, 0, vk::ShaderStageFlagBits::eVertex, sizeof(VertexShaderData), &shader_data);
 
 		cmd.drawIndexed((uint32_t)data.second->indicies.size(), 1, data.second->start_index, 0, 0);
 	}
@@ -115,8 +125,7 @@ FaceVertexData::FaceVertexData(std::string str)
 
 void Model::load_material_lib(const std::string& library_file)
 {
-	// FIXME pathify the library_file name
-	LOG_INFO("Loading material file %s", FILENAME_TO_PATH(library_file));
+	LOG_INFO("Loading material file %s", FILENAME_TO_PATH(library_file).c_str());
 	std::ifstream fstream(FILENAME_TO_PATH(library_file));
 
 	std::string mat_name;
@@ -150,9 +159,7 @@ void Model::load_material_lib(const std::string& library_file)
 			float r, g, b;
 			if (!(lstream >> r >> g >> b))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in mtl file of type AMBIENT (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in mtl file of type AMBIENT (%s)", line);
 				break;
 			}
 			ambient = glm::vec3(r, g, b);
@@ -162,9 +169,7 @@ void Model::load_material_lib(const std::string& library_file)
 			float r, g, b;
 			if (!(lstream >> r >> g >> b))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in mtl file of type DIFFUSE (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in mtl file of type DIFFUSE (%s)", line);
 				break;
 			}
 			diffuse = glm::vec3(r, g, b);
@@ -174,9 +179,7 @@ void Model::load_material_lib(const std::string& library_file)
 			float r, g, b;
 			if (!(lstream >> r >> g >> b))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in mtl file of type SPECULAR (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in mtl file of type SPECULAR (%s)", line);
 				break;
 			}
 			specular = glm::vec3(r, g, b);
@@ -186,9 +189,7 @@ void Model::load_material_lib(const std::string& library_file)
 			float a;
 			if (!(lstream >> a))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in mtl file of type ALPHA (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in mtl file of type ALPHA (%s)", line);
 				break;
 			}
 
@@ -199,15 +200,13 @@ void Model::load_material_lib(const std::string& library_file)
 			std::string name;
 			if (!(lstream >> name))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in mtl file of type NEWMTL (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in mtl file of type NEWMTL (%s)", line);
 				break;
 			}
 
 			if (mat_name != "")
 			{
-				std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, ambient, diffuse, specular, alpha);
+				std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
 				materials.emplace(mat_name, std::make_unique<MaterialData>(material));
 
 				alpha = 0.0f;
@@ -223,14 +222,15 @@ void Model::load_material_lib(const std::string& library_file)
 
 	if (mat_name != "")
 	{
-		std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, ambient, diffuse, specular, alpha);
+		std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
 		materials.emplace(mat_name, std::make_unique<MaterialData>(material));
 	}
 }
 
 void Model::load_model_data(std::string file)
 {
-	LOG_INFO("Loading model file %s", FILENAME_TO_PATH(file));
+	LOG_INFO("Loading model file %s", FILENAME_TO_PATH(file).c_str());
+
 	std::ifstream fstream(FILENAME_TO_PATH(file));
 	std::vector<glm::vec3> verticies;
 	std::vector<glm::vec3> normals;
@@ -269,9 +269,7 @@ void Model::load_model_data(std::string file)
 			float x, y, z;
 			if (!(lstream >> x >> y >> z))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in obj file of type VERTEX (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in obj file of type VERTEX (%s)", line);
 				break;
 			}
 
@@ -282,9 +280,7 @@ void Model::load_model_data(std::string file)
 			float x, y, z;
 			if (!(lstream >> x >> y >> z))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in obj file of type NORMAL (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in obj file of type NORMAL (%s)", line);
 				break;
 			}
 
@@ -295,9 +291,7 @@ void Model::load_model_data(std::string file)
 			std::string f1, f2, f3;
 			if (!(lstream >> f1 >> f2 >> f3))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in obj file of type FACE (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in obj file of type FACE (%s)", line);
 				break;
 			}
 
@@ -312,9 +306,7 @@ void Model::load_model_data(std::string file)
 			std::string library_file;
 			if(!(lstream >> library_file))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in obj file of type MTLLIB (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in obj file of type MTLLIB (%s)", line);
 				break;
 			}
 
@@ -325,9 +317,7 @@ void Model::load_model_data(std::string file)
 			std::string material;
 			if (!(lstream >> material))
 			{
-#ifndef NDEBUG
-				std::cerr << "Error parsing line in obj file of type USEMTL (" << line << ")" << std::endl;
-#endif
+				LOG_ERROR("Error parsing line in obj file of type USEMTL (%s)", line);
 				break;
 			}
 
@@ -345,7 +335,10 @@ void Model::load_model_data(std::string file)
 		}
 	}
 
-	faces.emplace(current_material, current_faces);
+	if (current_material != "")
+	{
+		faces.emplace(current_material, current_faces);
+	}
 
 	int i = 0;
 

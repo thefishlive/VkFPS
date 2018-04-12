@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 * Copyright 2017 James Fitzpatrick <james_fitzpatrick@outlook.com>           *
 *                                                                            *
 * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -20,49 +20,43 @@
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
 
-#include "r_material.h"
-#include "g_shader.h"
-#include "r_camera.h"
+#pragma once
 
-Material::Material(std::shared_ptr<GraphicsDevice>& device, GraphicsRenderpass& renderpass, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, float alpha)
-	: device(device), pipeline(std::move(renderpass.create_pipeline("shaders/standard.vert", "shaders/standard.frag"))), shader_data(ambient, diffuse, specular, alpha)
+#include <memory>
+
+#include <glm/glm.hpp>
+#include <vulkan/vulkan.hpp>
+
+#include "g_devmem.h"
+#include "r_shaderif.h"
+
+class Camera
 {
-	std::vector<vk::DescriptorBufferInfo> buffer_info{
-		Camera::get()->get_buffer_info()
-	};
+public:
+	Camera(std::shared_ptr<GraphicsDevmem> devmem, float fov, float aspect_ratio, float near, float far, const glm::vec3& position, const glm::vec3& target, const glm::vec3& up);
 
-	std::vector<vk::WriteDescriptorSet> writes{
-		vk::WriteDescriptorSet(
-			vk::DescriptorSet(),
-			0,
-			0,
-			(uint32_t) buffer_info.size(),
-			vk::DescriptorType::eUniformBuffer,
-			nullptr,
-			buffer_info.data(),
-			nullptr
-		)
-	};
+	~Camera();
+	
+	glm::mat4 get_matrix() const;
+	vk::DescriptorBufferInfo get_buffer_info() const;
 
-	this->pipeline->update_descriptor_sets(writes);
+	static std::shared_ptr<Camera> get();
+	static void set(std::shared_ptr<Camera>& camera);
+	
+private:
+	float fov;
+	float aspect_ratio;
+	float near;
+	float far;
 
-}
+	glm::vec3 position;
+	glm::vec3 target;
+	glm::vec3 up;
 
-Material::~Material()
-{
-}
+	CameraShaderData shader_data;
+	GraphicsDevmemBuffer *shader_data_buffer;
 
-void Material::bind_material(vk::CommandBuffer cmd) const
-{
-	cmd.setViewport(0, { vk::Viewport(0, 0, 800, 800) });
-	cmd.setScissor(0, { vk::Rect2D({ 0, 0 },{ 800, 800 }) });
+	static std::shared_ptr<Camera> current_camera;
 
-	pipeline->bind_pipeline(cmd);
-
-	this->pipeline->push_shader_data(cmd, sizeof(VertexShaderData), vk::ShaderStageFlagBits::eFragment, sizeof(MaterialShaderData), (void *)&shader_data);
-}
-
-void Material::push_shader_data(vk::CommandBuffer cmd, int offset, vk::ShaderStageFlagBits stage, size_t size, void* data) const
-{
-	this->pipeline->push_shader_data(cmd, offset, stage, size, data);
-}
+	void update_buffer() const;
+};

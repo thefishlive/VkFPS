@@ -71,4 +71,43 @@ struct MaterialShaderData
 	glm::vec4 diffuse;
 	glm::vec4 specular;
 	float alpha;
+
+
+	MaterialShaderData(const glm::vec4& ambient, const glm::vec4& diffuse, const glm::vec4& specular, float alpha)
+		: ambient(ambient),
+		  diffuse(diffuse),
+		  specular(specular),
+		  alpha(alpha)
+	{
+	}
+};
+
+struct VertexShaderData
+{
+	glm::mat4 model;
+
+	explicit VertexShaderData(const glm::mat4 &model)
+		: model(model)
+	{
+	}
+};
+
+struct CameraShaderData
+{
+	glm::mat4 proj_view;
+
+
+	explicit CameraShaderData(const glm::mat4& proj_view)
+		: proj_view(proj_view)
+	{
+	}
+};
+
+#define SHADER_LIGHT_COUNT 4
+
+struct LightShaderData
+{
+	bool enabled[SHADER_LIGHT_COUNT];
+	glm::vec4 direction[SHADER_LIGHT_COUNT];
+	glm::vec4 color[SHADER_LIGHT_COUNT];
 };

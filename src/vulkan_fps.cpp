@@ -27,6 +27,7 @@
 #include "g_renderpass.h"
 #include "g_swapchain.h"
 #include "g_window.h"
+#include "r_camera.h"
 #include "r_model.h"
 #include "u_debug.h"
 
@@ -37,9 +38,11 @@ int main(int argc, char *argv[])
 	{
 		GraphicsWindow window("Vulkan FPS", 800, 800);
 		std::shared_ptr<GraphicsDevice> device = std::make_shared<GraphicsDevice>(window);
+		std::shared_ptr<GraphicsDevmem> devmem = std::make_shared<GraphicsDevmem>(device);
+		std::shared_ptr<Camera> main_camera = std::make_shared<Camera>(devmem, glm::radians(70.0f), 800 / 800, 0.1f, 100.0f, glm::vec3(0, 0, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+		Camera::set(main_camera);
 
 		GraphicsSwapchain swapchain(window, device);
-		GraphicsDevmem devmem(device);
 		
 		std::vector<vk::UniqueCommandBuffer> command_buffers = device->graphics_queue.allocate_command_buffers(swapchain.get_image_count());
 
