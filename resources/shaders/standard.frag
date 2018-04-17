@@ -23,5 +23,13 @@ layout(push_constant) uniform ShaderData {
 } shader_data;
 
 void main() {
-	out_color = shader_data.ambient + shader_data.diffuse;
+	vec4 direction = vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+	vec4 color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	float intensity = max(dot(normal, direction), 0.0);
+	vec4 fragColor = shader_data.ambient;
+	fragColor += intensity * color;
+	fragColor = clamp(fragColor, 0.0, 1.0);
+
+	out_color = vec4(fragColor.rgb, 1.0);
 }

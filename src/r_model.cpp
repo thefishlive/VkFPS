@@ -55,9 +55,9 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDe
 	vertex_buffer = devmem->create_buffer(vbuf_create_info, vbuf_alloc_info);
 	
 	void *data;
-	vertex_buffer->map_buffer(&data);
+	vertex_buffer->map_memory(&data);
 	memcpy(data, verticies.data(), verticies.size() * sizeof(Vertex));
-	vertex_buffer->unmap_buffer();
+	vertex_buffer->unmap_memory();
 
 	vk::BufferCreateInfo ibuf_create_info(
 		vk::BufferCreateFlags(0),
@@ -72,12 +72,12 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDe
 
 	index_buffer = devmem->create_buffer(ibuf_create_info, ibuf_alloc_info);
 
-	index_buffer->map_buffer(&data);
+	index_buffer->map_memory(&data);
 	for (const auto & material : materials)
 	{
 		memcpy(data, material.second->indicies.data(), material.second->indicies.size() * sizeof(uint32_t));
 	}
-	index_buffer->unmap_buffer();
+	index_buffer->unmap_memory();
 }
 
 Model::~Model()

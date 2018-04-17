@@ -19,46 +19,26 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
 #include <vulkan/vulkan.hpp>
 
 #include "g_device.h"
 #include "g_pipeline.h"
-#include "g_pipeline_cache.h"
 
-class GraphicsRenderpass
+class GraphicsPipelineCache
 {
 public:
-	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
-	~GraphicsRenderpass();
+	GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device);
+	~GraphicsPipelineCache();
 
-	void add_attachment(vk::AttachmentDescription attachment);
-
-	void add_subpass(vk::SubpassDescription subpass);
-	void add_subpass_dependency(vk::SubpassDependency dependency);
-
-	void create_renderpass();
-
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
-
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
-	void end_renderpass(vk::CommandBuffer command_buffer) const;
-
-	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
-
-	explicit operator vk::RenderPass() const { return renderpass; }
+	std::unique_ptr<GraphicsPipeline> create_pipeline(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout);
 
 private:
-	bool created;
 	std::shared_ptr<GraphicsDevice> device;
 
-	vk::Device parent;
-	vk::RenderPass renderpass;
-	vk::DescriptorPool descriptor_pool;
+	vk::PipelineCache pipeline_cache;
 
-	std::vector<vk::AttachmentDescription> attachments;
-	std::vector<vk::SubpassDescription> subpasses;
-	std::vector<vk::SubpassDependency> dependencies;
-	GraphicsPipelineCache pipeline_cache;
+	static uint32_t hash_pipeline_info(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state);
 };

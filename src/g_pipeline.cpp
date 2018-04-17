@@ -23,11 +23,18 @@
 #include "g_pipeline.h"
 
 #include "u_debug.h"
+#include "u_defines.h"
 
-GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout)
+// #define IGNORE_PIPELINE_CACHE 1
+
+GraphicsPipeline::GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::PipelineCache cache, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout)
 	:  device(device), pipeline_layout(pipeline_layout), descriptor_set(descriptor_set), descriptor_set_layout(descriptor_set_layout)
 {
+#ifndef IGNORE_PIPELINE_CACHE
+	pipeline = device->device.createGraphicsPipeline(cache, create_info);
+#else
 	pipeline = device->device.createGraphicsPipeline(vk::PipelineCache(), create_info);
+#endif
 }
 
 GraphicsPipeline::~GraphicsPipeline()
@@ -56,4 +63,28 @@ void GraphicsPipeline::update_descriptor_sets(std::vector<vk::WriteDescriptorSet
 	}
 
 	device->device.updateDescriptorSets(writes, {});
+}
+
+std::vector<vk::DynamicState> GraphicsPipeline::get_dynamic_states(GraphicsDynamicStateFlags mask)
+{
+	std::vector<vk::DynamicState> dynamic_states;
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::ViewportBit))
+		dynamic_states.push_back(vk::DynamicState::eViewport);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::ScissorBit))
+		dynamic_states.push_back(vk::DynamicState::eScissor);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::LineWidthBit))
+		dynamic_states.push_back(vk::DynamicState::eDepthBias);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::DepthBiasBit))
+		dynamic_states.push_back(vk::DynamicState::eDepthBias);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::BlendConstantsBit))
+		dynamic_states.push_back(vk::DynamicState::eBlendConstants);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::DepthBoundsBit))
+		dynamic_states.push_back(vk::DynamicState::eDepthBounds);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::StencilCompareMaskBit))
+		dynamic_states.push_back(vk::DynamicState::eStencilCompareMask);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::StencilWriteMaskBit))
+		dynamic_states.push_back(vk::DynamicState::eStencilWriteMask);
+	if (BITMASK_HAS(mask, GraphicsDynamicStateBits::StencilReferenceBit))
+		dynamic_states.push_back(vk::DynamicState::eStencilReference);
+	return dynamic_states;
 }

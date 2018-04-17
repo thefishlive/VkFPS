@@ -19,46 +19,47 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-#pragma once
 
-#include <vulkan/vulkan.hpp>
-
-#include "g_device.h"
-#include "g_pipeline.h"
 #include "g_pipeline_cache.h"
+#include "u_defines.h"
 
-class GraphicsRenderpass
+
+GraphicsPipelineCache::GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device)
+	: device(device)
 {
-public:
-	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
-	~GraphicsRenderpass();
+	vk::PipelineCacheCreateInfo create_info(
+		vk::PipelineCacheCreateFlags(0),
+		0, nullptr
+	);
 
-	void add_attachment(vk::AttachmentDescription attachment);
+	pipeline_cache = device->device.createPipelineCache(create_info);
+}
 
-	void add_subpass(vk::SubpassDescription subpass);
-	void add_subpass_dependency(vk::SubpassDependency dependency);
+GraphicsPipelineCache::~GraphicsPipelineCache()
+{
+	device->device.destroyPipelineCache(pipeline_cache);
+}
 
-	void create_renderpass();
+std::unique_ptr<GraphicsPipeline> GraphicsPipelineCache::create_pipeline(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout)
+{
+	// TODO lookup from internal cache
+	std::vector<vk::DynamicState> dynamic_states = GraphicsPipeline::get_dynamic_states(dynamic_state);
+	vk::PipelineDynamicStateCreateInfo dynamic_state_info(
+		vk::PipelineDynamicStateCreateFlags(0),
+		(uint32_t)dynamic_states.size(), dynamic_states.data()
+	);
+	create_info.pDynamicState = &dynamic_state_info;
 
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
+	return std::make_unique<GraphicsPipeline>(device, pipeline_cache, create_info, pipeline_layout, descriptor_set, descriptor_set_layout);
+}
 
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
-	void end_renderpass(vk::CommandBuffer command_buffer) const;
+uint32_t GraphicsPipelineCache::hash_pipeline_info(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state)
+{
+	int prime = 31;
+	int result = 1;
+	result = prime * result ^ (VkFlags) dynamic_state;
+	result = prime * result ^ (int) create_info.pInputAssemblyState->topology;
+	// TODO shader hashing
+	return result;
+}
 
-	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
-
-	explicit operator vk::RenderPass() const { return renderpass; }
-
-private:
-	bool created;
-	std::shared_ptr<GraphicsDevice> device;
-
-	vk::Device parent;
-	vk::RenderPass renderpass;
-	vk::DescriptorPool descriptor_pool;
-
-	std::vector<vk::AttachmentDescription> attachments;
-	std::vector<vk::SubpassDescription> subpasses;
-	std::vector<vk::SubpassDependency> dependencies;
-	GraphicsPipelineCache pipeline_cache;
-};

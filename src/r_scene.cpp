@@ -19,46 +19,49 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-#pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "r_scene.h"
 
-#include "g_device.h"
-#include "g_pipeline.h"
-#include "g_pipeline_cache.h"
+std::shared_ptr<Scene> Scene::current_scene;
 
-class GraphicsRenderpass
+Scene::Scene(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem)
+	: device(device), devmem(devmem)
 {
-public:
-	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
-	~GraphicsRenderpass();
+	vk::BufferCreateInfo buffer_create_info(
+		vk::BufferCreateFlags(0),
+		sizeof(LightShaderData),
+		vk::BufferUsageFlagBits::eUniformBuffer
+	);
 
-	void add_attachment(vk::AttachmentDescription attachment);
+	VmaAllocationCreateInfo alloc_create_info{};
+	alloc_create_info.flags = 0;
+	alloc_create_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	void add_subpass(vk::SubpassDescription subpass);
-	void add_subpass_dependency(vk::SubpassDependency dependency);
+	light_data_buffer = devmem->create_buffer(buffer_create_info, alloc_create_info);
 
-	void create_renderpass();
+	light_data.enabled[0] = true;
+	light_data.color[0] = glm::vec4(0.0f, 1.0f, 1.0f, 0.0f);
+	light_data.direction[0] = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
 
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
+	update_buffer();
+}
 
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
-	void end_renderpass(vk::CommandBuffer command_buffer) const;
+Scene::~Scene()
+{
+}
 
-	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
+vk::DescriptorBufferInfo Scene::get_light_data_info() const
+{
+	return vk::DescriptorBufferInfo(
+		light_data_buffer->buffer,
+		0, sizeof(LightShaderData)
+	);
+}
 
-	explicit operator vk::RenderPass() const { return renderpass; }
-
-private:
-	bool created;
-	std::shared_ptr<GraphicsDevice> device;
-
-	vk::Device parent;
-	vk::RenderPass renderpass;
-	vk::DescriptorPool descriptor_pool;
-
-	std::vector<vk::AttachmentDescription> attachments;
-	std::vector<vk::SubpassDescription> subpasses;
-	std::vector<vk::SubpassDependency> dependencies;
-	GraphicsPipelineCache pipeline_cache;
-};
+void Scene::update_buffer() const
+{
+	void *data;
+	light_data_buffer->map_memory(&data);
+	memcpy(data, &light_data, sizeof(light_data));
+	light_data_buffer->unmap_memory();
+}

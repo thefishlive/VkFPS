@@ -23,23 +23,33 @@
 #include "r_material.h"
 #include "g_shader.h"
 #include "r_camera.h"
+#include "r_scene.h"
 
 Material::Material(std::shared_ptr<GraphicsDevice>& device, GraphicsRenderpass& renderpass, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, float alpha)
 	: device(device), pipeline(std::move(renderpass.create_pipeline("shaders/standard.vert", "shaders/standard.frag"))), shader_data(ambient, diffuse, specular, alpha)
 {
-	std::vector<vk::DescriptorBufferInfo> buffer_info{
-		Camera::get()->get_buffer_info()
-	};
+	vk::DescriptorBufferInfo camera_buffer = Camera::get()->get_buffer_info();
+	vk::DescriptorBufferInfo light_buffer = Scene::get()->get_light_data_info();
 
 	std::vector<vk::WriteDescriptorSet> writes{
 		vk::WriteDescriptorSet(
 			vk::DescriptorSet(),
 			0,
 			0,
-			(uint32_t) buffer_info.size(),
+			1,
 			vk::DescriptorType::eUniformBuffer,
 			nullptr,
-			buffer_info.data(),
+			&camera_buffer,
+			nullptr
+		),
+		vk::WriteDescriptorSet(
+			vk::DescriptorSet(),
+			1,
+			0,
+			1,
+			vk::DescriptorType::eUniformBuffer,
+			nullptr,
+			&light_buffer,
 			nullptr
 		)
 	};

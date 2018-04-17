@@ -29,6 +29,7 @@
 #include "g_window.h"
 #include "r_camera.h"
 #include "r_model.h"
+#include "r_scene.h"
 #include "u_debug.h"
 
 int main(int argc, char *argv[])
@@ -80,6 +81,9 @@ int main(int argc, char *argv[])
 			std::vector<vk::ImageView> views = { swapchain.get_image_view(i) };
 			framebuffers.push_back(renderpass.create_framebuffer(device->device, views, swapchain.get_extent()));
 		}
+		
+		std::shared_ptr<Scene> main_scene = std::make_unique<Scene>(device, devmem);
+		Scene::set(main_scene);
 
 		Model sphere_model(device, devmem, renderpass, "models/sphere.obj");
 

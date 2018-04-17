@@ -25,10 +25,35 @@
 
 #include "g_device.h"
 
+enum class GraphicsDynamicStateBits
+{
+	ViewportBit		= 1 << (int) vk::DynamicState::eViewport,
+	ScissorBit		= 1 << (int) vk::DynamicState::eScissor,
+	LineWidthBit		= 1 << (int) vk::DynamicState::eLineWidth,
+	DepthBiasBit		= 1 << (int) vk::DynamicState::eDepthBias,
+	BlendConstantsBit	= 1 << (int) vk::DynamicState::eBlendConstants,
+	DepthBoundsBit		= 1 << (int) vk::DynamicState::eDepthBounds,
+	StencilCompareMaskBit	= 1 << (int) vk::DynamicState::eStencilCompareMask,
+	StencilWriteMaskBit	= 1 << (int) vk::DynamicState::eStencilWriteMask,
+	StencilReferenceBit	= 1 << (int) vk::DynamicState::eStencilReference,
+};
+
+using GraphicsDynamicStateFlags = vk::Flags<GraphicsDynamicStateBits, VkFlags>;
+
+VULKAN_HPP_INLINE GraphicsDynamicStateFlags operator|(GraphicsDynamicStateBits bit0, GraphicsDynamicStateBits bit1)
+{
+	return GraphicsDynamicStateFlags(bit0) | bit1;
+}
+
+VULKAN_HPP_INLINE GraphicsDynamicStateFlags operator~(GraphicsDynamicStateBits bits)
+{
+	return ~(GraphicsDynamicStateBits(bits));
+}
+
 class GraphicsPipeline
 {
 public:
-	GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout);
+	GraphicsPipeline(std::shared_ptr<GraphicsDevice>& device, vk::PipelineCache cache, vk::GraphicsPipelineCreateInfo create_info, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout);
 	~GraphicsPipeline();
 
 	void bind_pipeline(vk::CommandBuffer cmd) const;
@@ -36,6 +61,7 @@ public:
 
 	void update_descriptor_sets(std::vector<vk::WriteDescriptorSet> writes) const;
 
+	static std::vector<vk::DynamicState> GraphicsPipeline::get_dynamic_states(GraphicsDynamicStateFlags mask);
 private:
 	std::shared_ptr<GraphicsDevice>& device;
 
@@ -43,4 +69,5 @@ private:
 	vk::PipelineLayout pipeline_layout;
 	vk::DescriptorSet descriptor_set;
 	vk::DescriptorSetLayout descriptor_set_layout;
+
 };

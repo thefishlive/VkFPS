@@ -64,7 +64,7 @@ void Camera::update_buffer() const
 	glm::mat4 proj_view = get_matrix();
 
 	void *data;
-	shader_data_buffer->map_buffer(&data);
+	shader_data_buffer->map_memory(&data);
 	memcpy(data, &proj_view, sizeof(proj_view));
-	shader_data_buffer->unmap_buffer();
+	shader_data_buffer->unmap_memory();
 }

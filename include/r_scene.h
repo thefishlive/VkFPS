@@ -19,46 +19,39 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
+
 #pragma once
 
+#include <memory>
+
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "g_device.h"
-#include "g_pipeline.h"
-#include "g_pipeline_cache.h"
+#include "g_devmem.h"
+#include "r_shaderif.h"
 
-class GraphicsRenderpass
+class Scene
 {
 public:
-	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
-	~GraphicsRenderpass();
+	Scene(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem);
+	~Scene();
 
-	void add_attachment(vk::AttachmentDescription attachment);
+	// TODO register models to a scene
 
-	void add_subpass(vk::SubpassDescription subpass);
-	void add_subpass_dependency(vk::SubpassDependency dependency);
+	vk::DescriptorBufferInfo get_light_data_info() const;
 
-	void create_renderpass();
-
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
-
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
-	void end_renderpass(vk::CommandBuffer command_buffer) const;
-
-	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
-
-	explicit operator vk::RenderPass() const { return renderpass; }
+	static std::shared_ptr<Scene> get() { return current_scene; }
+	static void set(std::shared_ptr<Scene>& scene) { current_scene = scene; }
 
 private:
-	bool created;
 	std::shared_ptr<GraphicsDevice> device;
+	std::shared_ptr<GraphicsDevmem> devmem;
 
-	vk::Device parent;
-	vk::RenderPass renderpass;
-	vk::DescriptorPool descriptor_pool;
+	LightShaderData light_data;
+	GraphicsDevmemBuffer* light_data_buffer;
 
-	std::vector<vk::AttachmentDescription> attachments;
-	std::vector<vk::SubpassDescription> subpasses;
-	std::vector<vk::SubpassDependency> dependencies;
-	GraphicsPipelineCache pipeline_cache;
+	static std::shared_ptr<Scene> current_scene;
+
+	void update_buffer() const;
 };

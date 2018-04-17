@@ -27,7 +27,7 @@
 #include "r_shaderif.h"
 #include "u_debug.h"
 
-GraphicsRenderpass::GraphicsRenderpass(std::shared_ptr<GraphicsDevice>& device) : created(false), device(device)
+GraphicsRenderpass::GraphicsRenderpass(std::shared_ptr<GraphicsDevice>& device) : created(false), device(device), pipeline_cache(device)
 {
 	std::vector<vk::DescriptorPoolSize> pool_sizes {
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 8)
@@ -212,7 +212,7 @@ std::unique_ptr<GraphicsPipeline> GraphicsRenderpass::create_pipeline(std::strin
 		false,
 		false,
 		vk::PolygonMode::eFill,
-		vk::CullModeFlagBits::eNone,
+		vk::CullModeFlagBits::eBack,
 		vk::FrontFace::eCounterClockwise,
 		0, 0, 0, 0,
 		1
@@ -239,13 +239,6 @@ std::unique_ptr<GraphicsPipeline> GraphicsRenderpass::create_pipeline(std::strin
 		false, false,
 		vk::StencilOpState(), vk::StencilOpState(),
 		0.0f, 1.0f
-	);
-
-	std::vector<vk::DynamicState> dynamic_states{ vk::DynamicState::eViewport, vk::DynamicState::eScissor };
-
-	vk::PipelineDynamicStateCreateInfo dynamic_state(
-		vk::PipelineDynamicStateCreateFlags(0),
-		(uint32_t)dynamic_states.size(), dynamic_states.data()
 	);
 
 	vk::PipelineColorBlendAttachmentState color_attachment_state(
@@ -288,10 +281,15 @@ std::unique_ptr<GraphicsPipeline> GraphicsRenderpass::create_pipeline(std::strin
 	create_info.pMultisampleState = &multisample;
 	create_info.pDepthStencilState = nullptr; // TODO
 	create_info.pColorBlendState = &color_blend;
-	create_info.pDynamicState = &dynamic_state;
 
 	create_info.subpass = 0;
 	create_info.basePipelineHandle = vk::Pipeline();
 
-	return std::make_unique<GraphicsPipeline>(device, create_info, pipeline_layout, descriptor_set, descriptor_layout);
+	return pipeline_cache.create_pipeline(
+		create_info,
+		GraphicsDynamicStateBits::ViewportBit | GraphicsDynamicStateBits::ScissorBit,
+		pipeline_layout, 
+		descriptor_set, 
+		descriptor_layout
+	);
 }
