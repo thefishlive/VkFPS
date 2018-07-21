@@ -1,0 +1,56 @@
+{
+    "shaders": {
+        "stages": [
+            {
+                "stage": "VERTEX",
+                "shader": "shaders/standard.vert"
+            },
+            {
+                "stage": "FRAGMENT",
+                "shader": "shaders/standard.frag"
+            }
+        ],
+        "push_constants": [
+            {
+                "stage": "VERTEX",
+                "offset": 0,
+                "size": 64
+            },
+            {
+                "stage": "FRAGMENT",
+                "offset": 64,
+                "size": 128
+            }
+        ],
+        "descriptor_sets": [
+            {
+                "type": "UNIFORM_BUFFER",
+                "binding": 0,
+                "count": 1,
+                "stage": "VERTEX"
+            },
+            {
+                "type": "UNIFORM_BUFFER",
+                "binding": 1,
+                "count": 1,
+                "stage": "FRAGMENT"
+            }
+        ]
+    },
+    "pipeline": {
+        "input_assembly": {
+            "primitive": "TRIANGLE_LIST"
+        },
+        "rasterization": {
+            "polygon_mode": "FILL",
+            "cull_mode": "BACK",
+            "front_face": "ANTI_CLOCKWISE"
+        },
+        "depth_scissor": {
+            "depth_enabled": false
+        },
+        "color_blend": {
+            "alpha_blend": false
+        }
+    }
+}

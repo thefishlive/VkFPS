@@ -34,13 +34,18 @@ class Camera
 {
 public:
 	Camera(std::shared_ptr<GraphicsDevmem> devmem, float fov, float aspect_ratio, float near, float far, const glm::vec3& position, const glm::vec3& target, const glm::vec3& up);
-
 	~Camera();
 	
 	glm::mat4 get_matrix() const;
 	vk::DescriptorBufferInfo get_buffer_info() const;
 
-	static std::shared_ptr<Camera> get();
+    float get_near_plane() const { return near; }
+    float get_far_plane() const { return far; }
+
+    void move(glm::vec3 vec);
+    void set_position(glm::vec3 vec) { position = vec; }
+
+    static std::shared_ptr<Camera> get();
 	static void set(std::shared_ptr<Camera>& camera);
 	
 private:
@@ -54,7 +59,7 @@ private:
 	glm::vec3 up;
 
 	CameraShaderData shader_data;
-	GraphicsDevmemBuffer *shader_data_buffer;
+	std::unique_ptr<GraphicsDevmemBuffer> shader_data_buffer;
 
 	static std::shared_ptr<Camera> current_camera;
 

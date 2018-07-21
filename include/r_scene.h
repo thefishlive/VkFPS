@@ -29,6 +29,7 @@
 
 #include "g_device.h"
 #include "g_devmem.h"
+#include "r_model.h"
 #include "r_shaderif.h"
 
 class Scene
@@ -40,6 +41,9 @@ public:
 	// TODO register models to a scene
 
 	vk::DescriptorBufferInfo get_light_data_info() const;
+    void add_model(std::unique_ptr<Model> model);
+
+    void render_models(vk::CommandBuffer buffer, uint32_t index);
 
 	static std::shared_ptr<Scene> get() { return current_scene; }
 	static void set(std::shared_ptr<Scene>& scene) { current_scene = scene; }
@@ -49,7 +53,9 @@ private:
 	std::shared_ptr<GraphicsDevmem> devmem;
 
 	LightShaderData light_data;
-	GraphicsDevmemBuffer* light_data_buffer;
+	std::unique_ptr<GraphicsDevmemBuffer> light_data_buffer;
+
+    std::vector<std::unique_ptr<Model>> models;
 
 	static std::shared_ptr<Scene> current_scene;
 

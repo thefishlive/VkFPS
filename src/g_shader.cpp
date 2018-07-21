@@ -25,7 +25,7 @@
 #include "u_io.h"
 
 GraphicsShader::GraphicsShader(std::shared_ptr<GraphicsDevice>& device, std::string shader_file)
-	: device(device)
+	: device(device), shader_file(shader_file)
 {
 	file_data data;
 	if (!read_file(shader_file + ".spv", &data))

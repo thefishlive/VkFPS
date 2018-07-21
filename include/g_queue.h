@@ -23,25 +23,26 @@
 
 #include <vulkan/vulkan.hpp>
 
+class GraphicsFence;
 class GraphicsDevice;
 
 class GraphicsQueue
 {
 public:
-	explicit GraphicsQueue();
+	GraphicsQueue(GraphicsDevice *device, uint32_t queue_index);
 	GraphicsQueue(GraphicsQueue & queue) = delete;
 	~GraphicsQueue();
 
-	void init_queue(vk::Device device, uint32_t queue_index);
+	vk::CommandBuffer allocate_command_buffer(vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
+	std::vector<vk::CommandBuffer> allocate_command_buffers(uint32_t count, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary) const;
 
-	std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
+	void submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::Semaphore& check_semaphore, vk::Semaphore& update_semaphore, std::unique_ptr<GraphicsFence>& fence) const;
+    void free_command_buffers(vk::ArrayProxy<const vk::CommandBuffer> buffer) const;
 
-	void submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::UniqueSemaphore & check_semaphore, vk::UniqueSemaphore & update_semaphore) const;
-
-	vk::Queue queue;
+    vk::Queue queue;
 
 private:
-	vk::Device device;
+	GraphicsDevice *device;
 
 	vk::CommandPool command_pool;
 };

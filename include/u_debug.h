@@ -46,10 +46,10 @@ void debug_log(LOG_LEVEL level, char *msg, ...);
 #define LOG_DEBUG(msg, ...) LOG(LOG_LEVEL_DEBUG, msg, ##__VA_ARGS__)
 
 #ifdef ENABLE_DEBUG_ASSERT
-#define DEBUG_ASSERT(b) do {                                                     \
-		if (!(b)) {                                                      \
+#define DEBUG_ASSERT(b) do {                                                       \
+		if (!(b)) {                                                        \
 			debug_assert_fail(#b, __FUNCTION__, __FILE__, __LINE__); \
-		}                                                                \
+		}                                                                  \
 	} while(0)
 
 void debug_assert_fail(const char * b, const char *func, const char *file, int line);

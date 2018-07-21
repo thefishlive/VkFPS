@@ -29,7 +29,7 @@
 class GraphicsSwapchain
 {
 public:
-	GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<GraphicsDevice>& device);
+	GraphicsSwapchain(std::shared_ptr<GraphicsWindow>& window, std::shared_ptr<GraphicsDevice>& device);
 	~GraphicsSwapchain();
 
 	uint32_t aquire_image(vk::Device device, vk::Semaphore aquire_semaphore) const;
@@ -51,7 +51,7 @@ private:
 	vk::Extent2D swapchain_extent;
 	vk::Queue present_queue;
 
-	vk::SurfaceFormatKHR select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats) const;
-	vk::PresentModeKHR select_present_mode(std::vector<vk::PresentModeKHR> present_modes) const;
+	static vk::SurfaceFormatKHR select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats);
+	static vk::PresentModeKHR select_present_mode(std::vector<vk::PresentModeKHR> present_modes);
 	vk::Extent2D select_swap_extent(vk::SurfaceCapabilitiesKHR surface_capabilities) const;
 };

@@ -24,22 +24,30 @@
 #include <vulkan/vulkan.hpp>
 
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 class GraphicsWindow
 {
 public:
 	GraphicsWindow(std::string window_name, uint32_t width, uint32_t height);
-	GraphicsWindow(GraphicsWindow & window);
+    GraphicsWindow(GraphicsWindow & window) = delete;
 	~GraphicsWindow();
 
 	vk::SurfaceKHR create_surface(vk::Instance instance);
 
-	bool should_close() const { return glfwWindowShouldClose(window.get()); }
+    bool should_close() const;
 	void poll_events() const { glfwPollEvents(); }
 
-	vk::SurfaceKHR surface;
+	vk::Extent2D get_window_size() const { return window_size; }
+    void close() const;
+
+    int get_key_state(int key) const;
+    glm::vec2 get_mouse_delta();
+
+    vk::SurfaceKHR surface;
 private:
 	std::shared_ptr<GLFWwindow> window;
 
 	vk::Extent2D window_size;
+    glm::vec2 last_mouse_pos;
 };

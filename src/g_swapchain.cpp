@@ -5,10 +5,10 @@
 #include "g_window.h"
 #include "u_debug.h"
 
-GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<GraphicsDevice>& device)
+GraphicsSwapchain::GraphicsSwapchain(std::shared_ptr<GraphicsWindow>& window, std::shared_ptr<GraphicsDevice>& device)
 	: device(device)
 {
-	vk::SurfaceCapabilitiesKHR surface_capabilities = device->physical_deivce.getSurfaceCapabilitiesKHR(window.surface);
+	vk::SurfaceCapabilitiesKHR surface_capabilities = device->physical_deivce.getSurfaceCapabilitiesKHR(window->surface);
 
 	uint32_t image_count = surface_capabilities.minImageCount + 1;
 	if (surface_capabilities.maxImageCount > 0)
@@ -16,8 +16,8 @@ GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<Gr
 		std::min(image_count, surface_capabilities.maxImageCount);
 	}
 
-	vk::SurfaceFormatKHR image_format = this->select_image_format(device->physical_deivce.getSurfaceFormatsKHR(window.surface));
-	vk::PresentModeKHR present_mode = this->select_present_mode(device->physical_deivce.getSurfacePresentModesKHR(window.surface));
+	vk::SurfaceFormatKHR image_format = this->select_image_format(device->physical_deivce.getSurfaceFormatsKHR(window->surface));
+	vk::PresentModeKHR present_mode = this->select_present_mode(device->physical_deivce.getSurfacePresentModesKHR(window->surface));
 	vk::Extent2D image_extent = this->select_swap_extent(surface_capabilities);
 
 	// TODO allow for combined graphics/present queues (Sharing Mode Concurrent)
@@ -26,7 +26,7 @@ GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<Gr
 
 	vk::SwapchainCreateInfoKHR swapchain_create_info(
 		vk::SwapchainCreateFlagsKHR(0),
-		window.surface,
+		window->surface,
 		image_count,
 		image_format.format,
 		image_format.colorSpace,
@@ -69,7 +69,7 @@ GraphicsSwapchain::GraphicsSwapchain(GraphicsWindow & window, std::shared_ptr<Gr
 		this->image_views.push_back(device->device.createImageView(view_create_info));
 	}
 
-	this->present_queue = device->graphics_queue.queue;
+	this->present_queue = device->graphics_queue->queue;
 }
 
 GraphicsSwapchain::~GraphicsSwapchain()
@@ -102,7 +102,7 @@ void GraphicsSwapchain::present_image(vk::Device device, uint32_t image_index, v
 	present_queue.presentKHR(present_info);
 }
 
-vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats) const
+vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::SurfaceFormatKHR> image_formats)
 {
 	DEBUG_ASSERT(image_formats.size() > 0);
 
@@ -121,7 +121,7 @@ vk::SurfaceFormatKHR GraphicsSwapchain::select_image_format(std::vector<vk::Surf
 	return image_formats[0];
 }
 
-vk::PresentModeKHR GraphicsSwapchain::select_present_mode(std::vector<vk::PresentModeKHR> present_modes) const
+vk::PresentModeKHR GraphicsSwapchain::select_present_mode(std::vector<vk::PresentModeKHR> present_modes)
 {
 	DEBUG_ASSERT(present_modes.size() > 0);
 

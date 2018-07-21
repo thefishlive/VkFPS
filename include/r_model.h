@@ -22,14 +22,17 @@
 
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <map>
 #include <vulkan/vulkan.hpp>
 
 #include "g_device.h"
 #include "g_devmem.h"
-#include "g_renderpass.h"
+
 #include "r_material.h"
+#include "r_renderer.h"
 #include "r_shaderif.h"
 
 struct MaterialData
@@ -49,27 +52,32 @@ struct MaterialData
 class Model
 {
 public:
-	Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, GraphicsRenderpass & renderpass, std::string file);
+	Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, std::shared_ptr<Renderer>& renderer, std::string file);
 	~Model();
 
-	void set_position(glm::vec3 & position) { this->position = position; }
+    void set_position(glm::vec3 & position) { this->position = position; }
+    void set_rotation(glm::quat & rotation) { this->rotation = rotation; }
 
-	void render(vk::CommandBuffer command_buffer);
+	void invalidate_recording();
+	void render(vk::CommandBuffer command_buffer, uint32_t image) const;
 
 private:
 	std::shared_ptr<GraphicsDevice>& device;
 	std::shared_ptr<GraphicsDevmem> devmem;
-	GraphicsRenderpass renderpass;
+	std::shared_ptr<Renderer> renderer;
+
+	std::vector<vk::CommandBuffer> command_buffers;
 
 	glm::vec3 position;
+    glm::quat rotation;
 
 	std::vector<Vertex> verticies;
 	std::map<std::string, std::unique_ptr<MaterialData>> materials;
 
 	uint32_t index_count;
 
-	GraphicsDevmemBuffer *vertex_buffer;
-	GraphicsDevmemBuffer *index_buffer;
+	std::unique_ptr<GraphicsDevmemBuffer> vertex_buffer;
+	std::unique_ptr<GraphicsDevmemBuffer> index_buffer;
 
 	void load_material_lib(const std::string& library_file);
 	void load_model_data(std::string file);

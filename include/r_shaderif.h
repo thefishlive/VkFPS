@@ -30,9 +30,10 @@ struct Vertex
 	glm::vec4 position;
 	glm::vec4 normal;
 	glm::vec4 color;
+    glm::vec2 uv;
 
-	Vertex(glm::vec4 position, glm::vec4 normal, glm::vec4 color = { 1, 1, 1, 1 }) : position(position), normal(normal), color(color) {}
-	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec4 color = { 1, 1, 1, 1 }) : position(glm::vec4(position, 1.0)), normal(glm::vec4(normal, 1.0)), color(color) {}
+	Vertex(glm::vec4 position, glm::vec4 normal, glm::vec4 color = { 1, 1, 1, 1 }, glm::vec2 uv = { 0, 0 }) : position(position), normal(normal), color(color), uv(uv) {}
+	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec4 color = { 1, 1, 1, 1 }, glm::vec2 uv = { 0, 0 }) : position(glm::vec4(position, 1.0)), normal(glm::vec4(normal, 1.0)), color(color), uv(uv) {}
 
 	static std::vector<vk::VertexInputAttributeDescription> get_vertex_input_attributes()
 	{
@@ -51,7 +52,12 @@ struct Vertex
 				2, 0,
 				vk::Format::eR32G32B32A32Sfloat,
 				offsetof(Vertex, color)
-			)
+			),
+            vk::VertexInputAttributeDescription(
+                3, 0,
+                vk::Format::eR32G32Sfloat,
+                offsetof(Vertex, uv)
+            )
 		};
 	}
 
@@ -96,7 +102,6 @@ struct CameraShaderData
 {
 	glm::mat4 proj_view;
 
-
 	explicit CameraShaderData(const glm::mat4& proj_view)
 		: proj_view(proj_view)
 	{
@@ -105,9 +110,14 @@ struct CameraShaderData
 
 #define SHADER_LIGHT_COUNT 4
 
+struct LightData
+{
+    glm::vec4 direction;
+    glm::vec4 color;
+    float radius;
+};
+
 struct LightShaderData
 {
-	bool enabled[SHADER_LIGHT_COUNT];
-	glm::vec4 direction[SHADER_LIGHT_COUNT];
-	glm::vec4 color[SHADER_LIGHT_COUNT];
+    LightData lights[SHADER_LIGHT_COUNT];
 };

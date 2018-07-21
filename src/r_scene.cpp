@@ -39,9 +39,12 @@ Scene::Scene(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDe
 
 	light_data_buffer = devmem->create_buffer(buffer_create_info, alloc_create_info);
 
-	light_data.enabled[0] = true;
-	light_data.color[0] = glm::vec4(0.0f, 1.0f, 1.0f, 0.0f);
-	light_data.direction[0] = glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f);
+    light_data.lights[0] = 
+    {
+        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f),          /* color */
+        glm::vec4(-1.0f, -1.0f, -1.0f, 1.0f),       /* direction */
+        5.0f                                        /* range */
+    };
 
 	update_buffer();
 }
@@ -56,6 +59,20 @@ vk::DescriptorBufferInfo Scene::get_light_data_info() const
 		light_data_buffer->buffer,
 		0, sizeof(LightShaderData)
 	);
+}
+
+void Scene::add_model(std::unique_ptr<Model> model)
+{
+    model->invalidate_recording();
+    models.push_back(std::move(model));
+}
+
+void Scene::render_models(vk::CommandBuffer buffer, uint32_t index)
+{
+    for (const auto &model : models)
+    {
+        model->render(buffer, index);
+    }
 }
 
 void Scene::update_buffer() const

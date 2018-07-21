@@ -24,8 +24,8 @@
 #include "u_defines.h"
 
 
-GraphicsPipelineCache::GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device)
-	: device(device)
+GraphicsPipelineCache::GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device, vk::DescriptorPool descriptor_pool)
+	: device(device), pipeline_builder(device, descriptor_pool)
 {
 	vk::PipelineCacheCreateInfo create_info(
 		vk::PipelineCacheCreateFlags(0),
@@ -40,26 +40,13 @@ GraphicsPipelineCache::~GraphicsPipelineCache()
 	device->device.destroyPipelineCache(pipeline_cache);
 }
 
-std::unique_ptr<GraphicsPipeline> GraphicsPipelineCache::create_pipeline(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout)
+std::unique_ptr<GraphicsPipeline> GraphicsPipelineCache::create_pipeline(std::unique_ptr<GraphicsPipelineCreateInfo> create_info, vk::RenderPass renderpass)
 {
-	// TODO lookup from internal cache
-	std::vector<vk::DynamicState> dynamic_states = GraphicsPipeline::get_dynamic_states(dynamic_state);
-	vk::PipelineDynamicStateCreateInfo dynamic_state_info(
-		vk::PipelineDynamicStateCreateFlags(0),
-		(uint32_t)dynamic_states.size(), dynamic_states.data()
-	);
-	create_info.pDynamicState = &dynamic_state_info;
-
-	return std::make_unique<GraphicsPipeline>(device, pipeline_cache, create_info, pipeline_layout, descriptor_set, descriptor_set_layout);
+	return pipeline_builder.create_pipeline(pipeline_cache, std::move(create_info), renderpass);
 }
 
-uint32_t GraphicsPipelineCache::hash_pipeline_info(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state)
+std::size_t GraphicsPipelineCache::hash_pipeline_info(GraphicsPipelineCreateInfo create_info)
 {
-	int prime = 31;
-	int result = 1;
-	result = prime * result ^ (VkFlags) dynamic_state;
-	result = prime * result ^ (int) create_info.pInputAssemblyState->topology;
-	// TODO shader hashing
-	return result;
+	return std::hash<GraphicsPipelineCreateInfo>{}(create_info);
 }
 

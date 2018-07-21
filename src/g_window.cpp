@@ -44,6 +44,7 @@ GraphicsWindow::GraphicsWindow(std::string window_name, uint32_t width, uint32_t
 
 GraphicsWindow::~GraphicsWindow()
 {
+    glfwDestroyWindow(this->window.get());
 	glfwTerminate();
 }
 
@@ -61,9 +62,29 @@ vk::SurfaceKHR GraphicsWindow::create_surface(vk::Instance instance)
 	return this->surface;
 }
 
-GraphicsWindow::GraphicsWindow(GraphicsWindow& window)
-	: surface(window.surface), 
-		window(window.window), 
-		window_size(window.window_size)
+bool GraphicsWindow::should_close() const
 {
+    return glfwWindowShouldClose(window.get());
+}
+
+int GraphicsWindow::get_key_state(int key) const
+{
+    return glfwGetKey(window.get(), key);
+}
+
+glm::vec2 GraphicsWindow::get_mouse_delta()
+{
+    double x, y;
+    glfwGetCursorPos(window.get(), &x, &y);
+    glm::vec2 pos = glm::vec2(x, y);
+    glm::vec2 delta = pos - last_mouse_pos;
+
+    last_mouse_pos = pos;
+
+    return delta;
+}
+
+void GraphicsWindow::close() const
+{
+    glfwSetWindowShouldClose(window.get(), GLFW_TRUE);
 }

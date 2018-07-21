@@ -51,9 +51,19 @@ endmacro()
 
 resource(models/sphere.obj)
 resource(models/sphere.mtl)
+resource(models/plane.obj)
+resource(models/plane.mtl)
+resource(models/bmps_27.obj)
+resource(models/bmps_27.mtl)
+resource(models/scene-Helicopter-27.obj)
+resource(models/scene-Helicopter-27.mtl)
 
+resource_shader(shaders/model.vert model_vert)
+resource_shader(shaders/model.frag model_frag)
 resource_shader(shaders/standard.vert standard_vert)
 resource_shader(shaders/standard.frag standard_frag)
+resource_shader(shaders/deferred.vert deffered_vert)
+resource_shader(shaders/deferred.frag deffered_frag)
 
 add_custom_target(Resources
     DEPENDS ${RESOURCES}

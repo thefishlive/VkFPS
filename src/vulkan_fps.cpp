@@ -22,8 +22,11 @@
 
 #include <iostream>
 
+#include <glm/glm.hpp>
+
 #include "g_device.h"
 #include "g_devmem.h"
+#include "g_fence.h"
 #include "g_renderpass.h"
 #include "g_swapchain.h"
 #include "g_window.h"
@@ -37,92 +40,149 @@ int main(int argc, char *argv[])
 	LOG_INFO("Starting vulkan application");
 
 	{
-		GraphicsWindow window("Vulkan FPS", 800, 800);
+		std::shared_ptr<GraphicsWindow> window = std::make_shared<GraphicsWindow>("Vulkan FPS", 800, 800);
 		std::shared_ptr<GraphicsDevice> device = std::make_shared<GraphicsDevice>(window);
 		std::shared_ptr<GraphicsDevmem> devmem = std::make_shared<GraphicsDevmem>(device);
-		std::shared_ptr<Camera> main_camera = std::make_shared<Camera>(devmem, glm::radians(70.0f), 800 / 800, 0.1f, 100.0f, glm::vec3(0, 0, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+		std::shared_ptr<GraphicsSwapchain> swapchain = std::make_shared<GraphicsSwapchain>(window, device);
+
+		std::shared_ptr<Camera> main_camera = std::make_shared<Camera>(devmem, glm::radians(70.0f), 800.0f / 800.0f, 0.1f, 100.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		Camera::set(main_camera);
 
-		GraphicsSwapchain swapchain(window, device);
-		
-		std::vector<vk::UniqueCommandBuffer> command_buffers = device->graphics_queue.allocate_command_buffers(swapchain.get_image_count());
+		std::vector<vk::CommandBuffer> command_buffers = device->graphics_queue->allocate_command_buffers(swapchain->get_image_count());
 
-		vk::UniqueSemaphore acquire_semaphore = device->create_semaphore();
-		vk::UniqueSemaphore release_semaphore = device->create_semaphore();
+        std::shared_ptr<Scene> main_scene = std::make_unique<Scene>(device, devmem);
+        Scene::set(main_scene);
 
-		GraphicsRenderpass renderpass(device);
-		renderpass.add_attachment(vk::AttachmentDescription(
-			vk::AttachmentDescriptionFlags(0),
-			swapchain.get_swapchain_format().format, vk::SampleCountFlagBits::e1, 
-			vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore, 
-			vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare, 
-			vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR)
-		);
-		std::vector<vk::AttachmentReference> attachments = { vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal) };
-		renderpass.add_subpass(vk::SubpassDescription(
-			vk::SubpassDescriptionFlags(0),
-			vk::PipelineBindPoint::eGraphics,
-			0, nullptr,
-			(uint32_t) attachments.size(), attachments.data(), nullptr,
-			nullptr,
-			0, nullptr
-		));
-		renderpass.add_subpass_dependency(vk::SubpassDependency(
-			VK_SUBPASS_EXTERNAL, 0, 
-			vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::AccessFlags(0), vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
-		));
-		renderpass.create_renderpass();
+        std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(device, window, devmem, swapchain);
 
-		std::vector<vk::UniqueFramebuffer> framebuffers;
+        std::unique_ptr<Model> sphere_model1 = std::make_unique<Model>(device, devmem, renderer, "models/sphere.obj");
+        sphere_model1->set_position(glm::vec3({ 1, 0, 0 }));
+        std::unique_ptr<Model> sphere_model2 = std::make_unique<Model>(device, devmem, renderer, "models/sphere.obj");
+        sphere_model2->set_position(glm::vec3({ -1, 1, 0 }));
 
-		for (uint32_t i = 0; i < swapchain.get_image_count(); i++)
-		{
-			std::vector<vk::ImageView> views = { swapchain.get_image_view(i) };
-			framebuffers.push_back(renderpass.create_framebuffer(device->device, views, swapchain.get_extent()));
-		}
-		
-		std::shared_ptr<Scene> main_scene = std::make_unique<Scene>(device, devmem);
-		Scene::set(main_scene);
+        std::unique_ptr<Model> plane_model1 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model1->set_position(glm::vec3({ -5, -2, 0 }));
+        std::unique_ptr<Model> plane_model2 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model2->set_position(glm::vec3({ 0, -2, 0 }));
+        std::unique_ptr<Model> plane_model3 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model3->set_position(glm::vec3({ 5, -2, 0 }));
+        std::unique_ptr<Model> plane_model4 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model4->set_position(glm::vec3({ -5, -2, 5 }));
+        std::unique_ptr<Model> plane_model5 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model5->set_position(glm::vec3({ 0, -2, 5 }));
+        std::unique_ptr<Model> plane_model6 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model6->set_position(glm::vec3({ 5, -2, 5 }));
+        std::unique_ptr<Model> plane_model7 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model7->set_position(glm::vec3({ -5, -2, -5 }));
+        std::unique_ptr<Model> plane_model8 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model8->set_position(glm::vec3({ 0, -2, -5 }));
+        std::unique_ptr<Model> plane_model9 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        plane_model9->set_position(glm::vec3({ 5, -2, -5 }));
 
-		Model sphere_model(device, devmem, renderpass, "models/sphere.obj");
+        main_scene->add_model(std::move(sphere_model1));
+        main_scene->add_model(std::move(sphere_model2));
+        main_scene->add_model(std::move(plane_model1));
+        main_scene->add_model(std::move(plane_model2));
+        main_scene->add_model(std::move(plane_model3));
+        main_scene->add_model(std::move(plane_model4));
+        main_scene->add_model(std::move(plane_model5));
+        main_scene->add_model(std::move(plane_model6));
+        main_scene->add_model(std::move(plane_model7));
+        main_scene->add_model(std::move(plane_model8));
+        main_scene->add_model(std::move(plane_model9));
 
-		vk::Rect2D screen_area(vk::Offset2D(0, 0), swapchain.get_extent());
-		std::vector<vk::ClearValue> clear_values = { vk::ClearColorValue(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f }) };
-		
+        std::vector<vk::Semaphore> acquire_semaphores;
+        std::vector<vk::Semaphore> release_semaphores;
+        std::vector<std::unique_ptr<GraphicsFence>> render_fences;
+
 		// Record command buffers
-		for (uint32_t i = 0; i < swapchain.get_image_count(); i++)
+		for (uint32_t i = 0; i < swapchain->get_image_count(); i++)
 		{
-			vk::CommandBuffer cmd = command_buffers[i].get();
+            acquire_semaphores.push_back(device->create_semaphore());
+            release_semaphores.push_back(device->create_semaphore());
+            render_fences.emplace_back(std::make_unique<GraphicsFence>(device));
+
+			vk::CommandBuffer cmd = command_buffers[i];
 			cmd.begin(vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eSimultaneousUse, nullptr));
 
-			renderpass.begin_renderpass(cmd, framebuffers[i].get(), screen_area, clear_values);
+            // Main render loop
+			renderer->begin_renderpass(cmd, i);
 			{
-				cmd.setViewport(0, { vk::Viewport(0, 0, 800, 800) });
-				cmd.setScissor(0, { vk::Rect2D({0, 0}, {800, 800}) });
+                main_scene->render_models(cmd, i);
 
-				sphere_model.render(cmd);
+				renderer->next_subpass(cmd);
+
+				renderer->render_final_image(cmd, i);
 			}
-			renderpass.end_renderpass(cmd);
+			renderer->end_renderpass(cmd);
 
 			cmd.end();
+
 		}
 
 		LOG_INFO("Setup vulkan application");
 
 		// Main window loop
-		while (!window.should_close())
+		while (!window->should_close())
 		{
-			window.poll_events();
+			window->poll_events();
+            glm::vec3 movement = glm::vec3();
 
-			device->device.waitIdle();
+            if (window->get_key_state(GLFW_KEY_A))
+            {
+                movement += glm::vec3(1.0f, 0.0f, 0.0f);
+            }
+            if (window->get_key_state(GLFW_KEY_D))
+            {
+                movement += glm::vec3(-1.0f, 0.0f, 0.0f);
+            }
+            if (window->get_key_state(GLFW_KEY_W))
+            {
+                movement += glm::vec3(0.0f, 0.0f, 1.0f);
+            }
+            if (window->get_key_state(GLFW_KEY_S))
+            {
+                movement += glm::vec3(0.0f, 0.0f, -1.0f);
+            }
 
-			uint32_t image = swapchain.aquire_image(device->device, acquire_semaphore.get());
+            movement *= 0.01f;
+            main_camera->move(movement);
 
-			device->graphics_queue.submit_commands(std::vector<vk::CommandBuffer>{command_buffers[image].get()}, acquire_semaphore, release_semaphore);
+            if (window->get_key_state(GLFW_KEY_R))
+            {
+                main_camera->set_position(glm::vec3(0, 0, -5.0f));
+            }
+            if (window->get_key_state(GLFW_KEY_ESCAPE))
+            {
+                window->close();
+            }
 
-			swapchain.present_image(device->device, image, release_semaphore.get());
+			uint32_t image = swapchain->aquire_image(device->device, acquire_semaphores[0]);
+
+            if (render_fences[image]->get_status() != GraphicsFenceStatus::Reset)
+            {
+                render_fences[image]->wait();
+                render_fences[image]->reset();
+            }
+
+			device->graphics_queue->submit_commands(
+				{ command_buffers[image] },
+				acquire_semaphores[0], release_semaphores[image],
+                render_fences[image]
+			);
+
+			swapchain->present_image(device->device, image, release_semaphores[image]);
 		}
+        
+        // Finish work before destroying context
+        device->device.waitIdle();
+
+        // Cleanup resources created
+        for (uint32_t i = 0; i < swapchain->get_image_count(); i++)
+        {
+            device->device.destroySemaphore(acquire_semaphores[i]);
+            device->device.destroySemaphore(release_semaphores[i]);
+        }
 	}
 
 	LOG_INFO("Destroyed vulkan application");

@@ -25,23 +25,25 @@
 #include <vulkan/vulkan.hpp>
 
 #include "g_queue.h"
+#include "g_transfer_context.h"
 #include "g_window.h"
 
 struct QueueFamilyIndicies
 {
 	uint32_t graphics_queue = -1;
 	uint32_t present_queue = -1;
+    uint32_t transfer_queue = -1;
 
-	bool is_complete() const
-	{
-		return graphics_queue != -1 && present_queue != -1;
+    bool is_complete() const
+    {
+		return graphics_queue != -1 && present_queue != -1 && transfer_queue != -1;
 	}
 };
 
 class GraphicsDevice
 {
 public:
-	GraphicsDevice(GraphicsWindow & window);
+	GraphicsDevice(std::shared_ptr<GraphicsWindow>& window);
 	GraphicsDevice(GraphicsDevice & device) = delete;
 	~GraphicsDevice();
 
@@ -49,14 +51,17 @@ public:
 	vk::PhysicalDevice physical_deivce;
 	vk::Device device;
 
-	vk::UniqueSemaphore create_semaphore() const;
+	vk::Semaphore create_semaphore() const;
 
-	GraphicsQueue graphics_queue;
-	GraphicsQueue present_queue;
+    std::unique_ptr<GraphicsTransferContext> transfer_context;
+
+    std::shared_ptr<GraphicsQueue> graphics_queue;
+    std::shared_ptr<GraphicsQueue> present_queue;
+    std::shared_ptr<GraphicsQueue> transfer_queue;
 
 private:
-	vk::DebugReportCallbackEXT debug_report_callback;
+	vk::DebugUtilsMessengerEXT debug_report_callback;
 
-	bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
+	static bool is_device_suitable(::vk::PhysicalDevice physical_device, vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data);
 	vk::PhysicalDevice select_physical_device(vk::SurfaceKHR surface, QueueFamilyIndicies & queue_data) const;
 };

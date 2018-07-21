@@ -10,9 +10,9 @@ layout(location = 1) in vec4 normal;
 layout(location = 0) out vec4 out_color;
 
 layout(binding = 1) uniform LightData {
-	bool enabled[lightcount];
 	vec4 direction[lightcount];
 	vec4 color[lightcount];
+	bool enabled[lightcount];
 } light_data;
 
 layout(push_constant) uniform ShaderData {

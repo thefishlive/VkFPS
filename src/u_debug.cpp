@@ -28,7 +28,7 @@
 
 #ifdef ENABLE_DEBUG_LOGGING
 
-#define DEBUG_LOG_MSG_BUF_SIZE 256
+#define DEBUG_LOG_MSG_BUF_SIZE 1024
 
 void debug_log(LOG_LEVEL level, char* msg, ...)
 {

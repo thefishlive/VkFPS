@@ -23,15 +23,15 @@ find_package(Vulkan REQUIRED)
 # Project tuneables
 #
 
-OPTION(ENABLE_VK_LAYER_VALIDATION "Enable VK_LAYER_LUNARG_standard_validation layers" OFF)
-OPTION(ENABLE_VK_LAYER_VALIDATION_DEBUG "Enable VK_LAYER_LUNARG_standard_validation debug info" OFF)
+option(ENABLE_VK_LAYER_VALIDATION "Enable VK_LAYER_LUNARG_standard_validation layers" OFF)
+option(ENABLE_VK_LAYER_VALIDATION_DEBUG "Enable VK_LAYER_LUNARG_standard_validation debug info" OFF)
 
-OPTION(ENABLE_VK_LAYER_API_DUMP "Enable VK_LAYER_LUNARG_api_dump layer" OFF)
-OPTION(ENABLE_VK_LAYER_ASSISTANT "Enable VK_LAYER_LUNARG_assistant_layer layer" OFF)
-OPTION(ENABLE_VK_LAYER_MONITOR "Enable VK_LAYER_LUNARG_monitor layer" OFF)
+option(ENABLE_VK_LAYER_API_DUMP "Enable VK_LAYER_LUNARG_api_dump layer" OFF)
+option(ENABLE_VK_LAYER_ASSISTANT "Enable VK_LAYER_LUNARG_assistant_layer layer" OFF)
+option(ENABLE_VK_LAYER_MONITOR "Enable VK_LAYER_LUNARG_monitor layer" OFF)
 
-OPTION(ENABLE_DEBUG_LOGGING "Enable debug logging of messages" OFF)
-OPTION(ENABLE_DEBUG_ASSERT "Enable debug asserts" OFF)
+option(ENABLE_DEBUG_LOGGING "Enable debug logging of messages" OFF)
+option(ENABLE_DEBUG_ASSERT "Enable debug asserts" OFF)
 
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -81,18 +81,22 @@ add_all("vulkan_fps")
 
 add_all("g_device")
 add_all("g_devmem")
+add_all("g_fence")
 add_all("g_pipeline")
+add_all("g_pipeline_builder")
 add_all("g_pipeline_cache")
 add_all("g_queue")
 add_all("g_renderpass")
 add_all("g_swapchain")
 add_all("g_shader")
+add_all("g_transfer_context")
 add_all("g_window")
 
 add_all("r_camera")
 add_all("r_model")
 add_all("r_material")
 add_all("r_scene")
+add_all("r_renderer")
 
 add_all("u_debug")
 add_all("u_io")

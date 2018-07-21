@@ -25,12 +25,13 @@
 
 #include "g_device.h"
 #include "g_pipeline.h"
+#include "g_pipeline_builder.h"
 #include "g_pipeline_cache.h"
 
 class GraphicsRenderpass
 {
 public:
-	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device);
+	explicit GraphicsRenderpass(std::shared_ptr<GraphicsDevice> &device, vk::DescriptorPool descriptor_pool);
 	~GraphicsRenderpass();
 
 	void add_attachment(vk::AttachmentDescription attachment);
@@ -40,12 +41,12 @@ public:
 
 	void create_renderpass();
 
-	vk::UniqueFramebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
+	vk::Framebuffer create_framebuffer(vk::Device device, std::vector<vk::ImageView> image_views, vk::Extent2D extent) const;
 
-	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values) const;
+	void begin_renderpass(vk::CommandBuffer command_buffer, vk::Framebuffer framebuffer, vk::Rect2D render_area, std::vector<vk::ClearValue> clear_values, vk::SubpassContents contents = vk::SubpassContents::eInline) const;
 	void end_renderpass(vk::CommandBuffer command_buffer) const;
 
-	std::unique_ptr<GraphicsPipeline> create_pipeline(std::string vertex_shader_file, std::string frag_shader_file);
+	std::unique_ptr<GraphicsPipeline> create_pipeline(std::unique_ptr<GraphicsPipelineCreateInfo> create_info);
 
 	explicit operator vk::RenderPass() const { return renderpass; }
 

@@ -23,49 +23,63 @@
 #include "g_queue.h"
 
 #include "g_device.h"
+#include "g_fence.h"
 
-GraphicsQueue::GraphicsQueue()
+GraphicsQueue::GraphicsQueue(GraphicsDevice *device, uint32_t queue_index)
+    : device(device)
 {
+    queue = device->device.getQueue(queue_index, 0);
+    vk::CommandPoolCreateInfo create_info(
+        vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        queue_index
+    );
+
+    this->command_pool = device->device.createCommandPool(create_info);
 }
 
 GraphicsQueue::~GraphicsQueue()
 {
-	if ((VkDevice) device != VK_NULL_HANDLE)
-	{
-		device.destroyCommandPool(command_pool);
-	}
+    device->device.destroyCommandPool(command_pool);
 }
 
-void GraphicsQueue::init_queue(vk::Device device, uint32_t queue_index)
+vk::CommandBuffer GraphicsQueue::allocate_command_buffer(vk::CommandBufferLevel level) const
 {
-	this->device = device;
-	this->queue = device.getQueue(queue_index, 0);
-
-	vk::CommandPoolCreateInfo create_info(
-		vk::CommandPoolCreateFlags(0),
-		queue_index
-	);
-
-	this->command_pool = device.createCommandPool(create_info);
+	return this->allocate_command_buffers(1, level)[0];
 }
 
-std::vector<vk::UniqueCommandBuffer> GraphicsQueue::allocate_command_buffers(uint32_t count) const
+std::vector<vk::CommandBuffer> GraphicsQueue::allocate_command_buffers(uint32_t count, vk::CommandBufferLevel level) const
 {
 	vk::CommandBufferAllocateInfo info(
 		command_pool,
-		vk::CommandBufferLevel::ePrimary,
+		level,
 		count
 	);
 
-	return device.allocateCommandBuffersUnique(info);
+	return device->device.allocateCommandBuffers(info);
 }
 
-void GraphicsQueue::submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::UniqueSemaphore & check_semaphore, vk::UniqueSemaphore & update_semaphore) const
+void GraphicsQueue::free_command_buffers(vk::ArrayProxy<const vk::CommandBuffer> buffer) const
 {
-	std::array<vk::Semaphore, 1> check_semaphores = { check_semaphore.get() };
-	std::array<vk::PipelineStageFlags, 1> pipeline_stage_flags = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+    device->device.freeCommandBuffers(command_pool, buffer);
+}
 
-	std::array<vk::Semaphore, 1> update_semaphores = { update_semaphore.get() };
+void GraphicsQueue::submit_commands(std::vector<vk::CommandBuffer> command_buffers, vk::Semaphore& check_semaphore, vk::Semaphore& update_semaphore, std::unique_ptr<GraphicsFence>& fence) const
+{
+    std::vector<vk::Semaphore> check_semaphores;
+	std::vector<vk::PipelineStageFlags> pipeline_stage_flags = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+    /* Add check semaphore to batch */
+    check_semaphores.push_back(check_semaphore);
+    pipeline_stage_flags.push_back(vk::PipelineStageFlagBits::eColorAttachmentOutput);
+
+    /* Add transfer semaphore if required */
+    for (const auto & transfer_semaphore : device->transfer_context->get_next_frame_sync())
+    {
+        check_semaphores.push_back(transfer_semaphore);
+        pipeline_stage_flags.push_back(vk::PipelineStageFlagBits::eTopOfPipe);
+    }
+    
+	std::array<vk::Semaphore, 1> update_semaphores = { update_semaphore };
 
 	vk::SubmitInfo submit_info(
 		(uint32_t) check_semaphores.size(), check_semaphores.data(), pipeline_stage_flags.data(),
@@ -74,6 +88,7 @@ void GraphicsQueue::submit_commands(std::vector<vk::CommandBuffer> command_buffe
 	);
 
 	std::array<vk::SubmitInfo, 1> submits = { submit_info };
+    fence->set_submitted();
 
-	queue.submit((uint32_t) submits.size(), submits.data(), vk::Fence());
+	queue.submit((uint32_t) submits.size(), submits.data(), *fence.get());
 }

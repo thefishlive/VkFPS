@@ -29,28 +29,32 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "r_camera.h"
 #include "r_material.h"
+
 #include "u_debug.h"
+#include "u_defines.h"
 #include "u_io.h"
 
-Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, GraphicsRenderpass & renderpass, std::string file)
-	: device(device), devmem(devmem), renderpass(renderpass), position(0, 0, 0)
+Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDevmem>& devmem, std::shared_ptr<Renderer>& renderer, std::string file)
+	: device(device), devmem(devmem), renderer(renderer), position(0, 0, 0)
 {
 	load_model_data(file);
 
 	vk::BufferCreateInfo vbuf_create_info(
 		vk::BufferCreateFlags(0),
 		verticies.size() * sizeof(Vertex),
-		vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc,
+		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::SharingMode::eExclusive
 	);
 
 	VmaAllocationCreateInfo vbuf_alloc_info{};
 	vbuf_alloc_info.flags = 0;
-	vbuf_alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	vbuf_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	vbuf_alloc_info.pUserData = STRING_TO_DATA("Vertex Buffer");
 
 	vertex_buffer = devmem->create_buffer(vbuf_create_info, vbuf_alloc_info);
 	
@@ -58,17 +62,19 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDe
 	vertex_buffer->map_memory(&data);
 	memcpy(data, verticies.data(), verticies.size() * sizeof(Vertex));
 	vertex_buffer->unmap_memory();
+    vertex_buffer->commit_memory();
 
 	vk::BufferCreateInfo ibuf_create_info(
 		vk::BufferCreateFlags(0),
 		sizeof(uint32_t) * index_count,
-		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferSrc,
+		vk::BufferUsageFlagBits::eIndexBuffer,
 		vk::SharingMode::eExclusive
 	);
 
 	VmaAllocationCreateInfo ibuf_alloc_info{};
 	ibuf_alloc_info.flags = 0;
-	ibuf_alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	ibuf_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	ibuf_alloc_info.pUserData = STRING_TO_DATA("Index Buffer");
 
 	index_buffer = devmem->create_buffer(ibuf_create_info, ibuf_alloc_info);
 
@@ -78,32 +84,47 @@ Model::Model(std::shared_ptr<GraphicsDevice>& device, std::shared_ptr<GraphicsDe
 		memcpy(data, material.second->indicies.data(), material.second->indicies.size() * sizeof(uint32_t));
 	}
 	index_buffer->unmap_memory();
+    index_buffer->commit_memory();
+
+	command_buffers = renderer->alloc_render_command_buffers();
+	this->invalidate_recording();
 }
 
 Model::~Model()
 {
-	delete vertex_buffer;
-	delete index_buffer;
 }
 
-void Model::render(vk::CommandBuffer cmd)
+void Model::invalidate_recording()
 {
-	std::vector<vk::Buffer> vbufs = { vertex_buffer->buffer };
-	std::vector<VkDeviceSize> voffsets = { 0 };
-
-	cmd.bindVertexBuffers(0, (uint32_t) vbufs.size(), vbufs.data(), voffsets.data());
-	cmd.bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint32);
-
-	glm::mat4 translation = glm::translate(glm::mat4(1), position);
-	VertexShaderData shader_data(translation);
-
-	for (const auto & data : materials)
+	for (auto i = 0; i < command_buffers.size(); i++)
 	{
-		data.second->material->bind_material(cmd);
-		data.second->material->push_shader_data(cmd, 0, vk::ShaderStageFlagBits::eVertex, sizeof(VertexShaderData), &shader_data);
+		renderer->start_secondary_command_buffer(command_buffers[i], i, 0);
 
-		cmd.drawIndexed((uint32_t)data.second->indicies.size(), 1, data.second->start_index, 0, 0);
+		std::vector<vk::Buffer> vbufs{ vertex_buffer->buffer };
+		std::vector<VkDeviceSize> voffsets{ 0 };
+
+		command_buffers[i].bindVertexBuffers(0, (uint32_t)vbufs.size(), vbufs.data(), voffsets.data());
+		command_buffers[i].bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint32);
+
+		glm::mat4 translation = glm::translate(glm::mat4(1), position);
+        glm::mat4 rotation = glm::toMat4(this->rotation);
+		VertexShaderData shader_data(translation);
+
+		for (const auto & data : materials)
+		{
+			data.second->material->bind_material(command_buffers[i]);
+			data.second->material->push_shader_data(command_buffers[i], 0, vk::ShaderStageFlagBits::eVertex, sizeof(VertexShaderData), &shader_data);
+
+			command_buffers[i].drawIndexed((uint32_t)data.second->indicies.size(), 1, data.second->start_index, 0, 0);
+		}
+
+		renderer->end_secondary_command_buffer(command_buffers[i]);
 	}
+}
+
+void Model::render(vk::CommandBuffer cmd, uint32_t image) const
+{
+	cmd.executeCommands(this->command_buffers[image]);
 }
 
 struct FaceVertexData
@@ -206,7 +227,7 @@ void Model::load_material_lib(const std::string& library_file)
 
 			if (mat_name != "")
 			{
-				std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
+				std::unique_ptr<Material> material = std::make_unique<Material>(device, renderer, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
 				materials.emplace(mat_name, std::make_unique<MaterialData>(material));
 
 				alpha = 0.0f;
@@ -222,7 +243,7 @@ void Model::load_material_lib(const std::string& library_file)
 
 	if (mat_name != "")
 	{
-		std::unique_ptr<Material> material = std::make_unique<Material>(device, renderpass, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
+		std::unique_ptr<Material> material = std::make_unique<Material>(device, renderer, glm::vec4(ambient, 1.0f), glm::vec4(diffuse, 1.0f), glm::vec4(specular, 1.0f), alpha);
 		materials.emplace(mat_name, std::make_unique<MaterialData>(material));
 	}
 }

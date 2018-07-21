@@ -32,10 +32,12 @@ public:
 	GraphicsShader(std::shared_ptr<GraphicsDevice>& device, std::string shader_file);
 	~GraphicsShader();
 
+    std::string get_shader_name() { return shader_file; }
 	explicit operator vk::ShaderModule() const { return shader; }
 
 private:
 	std::shared_ptr<GraphicsDevice>& device;
 
+    std::string shader_file;
 	vk::ShaderModule shader;
 };

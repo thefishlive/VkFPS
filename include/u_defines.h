@@ -23,3 +23,5 @@
 
 #define BITMASK_HAS(b, m) ((b & m) == m)
 #define BITMASK_SET(b, m) (b |= m)
+
+#define STRING_TO_DATA(c) ((void *) c)

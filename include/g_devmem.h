@@ -30,19 +30,54 @@
 class GraphicsDevmemBuffer
 {
 public:
-	GraphicsDevmemBuffer() : allocator(), allocation() {}
-	GraphicsDevmemBuffer(VmaAllocator allocator, VkBuffer buffer, VmaAllocation allocation);
+	GraphicsDevmemBuffer(
+        std::shared_ptr<GraphicsDevice> device, VmaAllocator allocator,
+        VkBuffer buffer, VmaAllocation allocation, VmaAllocationInfo alloc_info,
+        VkBuffer staging_buffer, VmaAllocation staging_allocation, VmaAllocationInfo staging_alloc_info
+    );
 	~GraphicsDevmemBuffer();
 
-	void map_buffer(void **data) const;
-	void unmap_buffer() const;
+	bool is_visible() const;
+	void map_memory(void **data) const;
+	void unmap_memory() const;
+    void commit_memory() const;
+
+	vk::BufferView create_buffer_view(vk::BufferViewCreateInfo& create_info) const;
 
 	vk::Buffer buffer;
 
 private:
+	std::shared_ptr<GraphicsDevice> device;
 	VmaAllocator allocator;
 
 	VmaAllocation allocation;
+	VmaAllocationInfo alloc_info;
+
+    vk::Buffer staging_buffer;
+    VmaAllocation staging_allocation;
+    VmaAllocationInfo staging_alloc_info;
+};
+
+class GraphicsDevmemImage
+{
+public:
+	GraphicsDevmemImage(std::shared_ptr<GraphicsDevice> device, VmaAllocator allocator, VkImage image, VmaAllocation allocation, VmaAllocationInfo alloc_info);
+	~GraphicsDevmemImage();
+
+	void map_memory(void **data) const;
+	void unmap_memory() const;
+
+	bool is_visible() const;
+	vk::ImageView create_image_view(vk::ImageViewCreateInfo& create_info) const;
+
+	vk::Image image;
+
+private:
+	std::shared_ptr<GraphicsDevice> device;
+	VmaAllocator allocator;
+
+	VmaAllocation allocation;
+	VmaAllocationInfo alloc_info;
 };
 
 class GraphicsDevmem
@@ -51,10 +86,10 @@ public:
 	GraphicsDevmem(std::shared_ptr<GraphicsDevice>& device);
 	~GraphicsDevmem();
 
-	GraphicsDevmemBuffer* create_buffer(vk::BufferCreateInfo buffer_create_info, VmaAllocationCreateInfo alloc_create_info) const;
+	std::unique_ptr<GraphicsDevmemBuffer> create_buffer(vk::BufferCreateInfo buffer_create_info, VmaAllocationCreateInfo alloc_create_info) const;
+	std::unique_ptr<GraphicsDevmemImage> create_image(vk::ImageCreateInfo create_info, VmaAllocationCreateInfo alloc_create_info) const;
 
 private:
 	std::shared_ptr<GraphicsDevice> device;
-
 	VmaAllocator allocator;
 };

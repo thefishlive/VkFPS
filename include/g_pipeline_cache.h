@@ -26,19 +26,21 @@
 
 #include "g_device.h"
 #include "g_pipeline.h"
+#include "g_pipeline_builder.h"
 
 class GraphicsPipelineCache
 {
 public:
-	GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device);
+	GraphicsPipelineCache(std::shared_ptr<GraphicsDevice> device, vk::DescriptorPool descriptor_pool);
 	~GraphicsPipelineCache();
 
-	std::unique_ptr<GraphicsPipeline> create_pipeline(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state, vk::PipelineLayout pipeline_layout, vk::DescriptorSet descriptor_set, vk::DescriptorSetLayout descriptor_set_layout);
+    std::unique_ptr<GraphicsPipeline> create_pipeline(std::unique_ptr<GraphicsPipelineCreateInfo> create_info, vk::RenderPass renderpass);
 
 private:
 	std::shared_ptr<GraphicsDevice> device;
 
+	GraphicsPipelineBuilder pipeline_builder;
 	vk::PipelineCache pipeline_cache;
 
-	static uint32_t hash_pipeline_info(vk::GraphicsPipelineCreateInfo create_info, GraphicsDynamicStateFlags dynamic_state);
+	std::size_t hash_pipeline_info(GraphicsPipelineCreateInfo create_info);
 };
