@@ -27,6 +27,11 @@
 #include "g_device.h"
 #include "vk_mem_alloc.h"
 
+typedef enum VmaAllocationCreateFlagBitsExtended
+{
+    VMA_ALLOCATION_CREATE_EXT_DONT_CREATE_STAGING_BUFFER = 1 << 16,
+} VmaAllocationCreateFlagBitsExtended;
+
 class GraphicsDevmemBuffer
 {
 public:

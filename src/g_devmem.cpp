@@ -223,7 +223,7 @@ std::unique_ptr<GraphicsDevmemBuffer> GraphicsDevmem::create_buffer(vk::BufferCr
     VmaAllocation staging_allocatin = VK_NULL_HANDLE;
     VmaAllocationInfo staging_alloc_info;
 
-    if (alloc_create_info.usage == VMA_MEMORY_USAGE_GPU_ONLY)
+    if (alloc_create_info.usage == VMA_MEMORY_USAGE_GPU_ONLY && !BITMASK_HAS(alloc_create_info.flags, VMA_ALLOCATION_CREATE_EXT_DONT_CREATE_STAGING_BUFFER))
     {
         LOG_INFO("Allocating staging buffer");
 
