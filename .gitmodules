@@ -11,3 +11,6 @@
 	path = external/stb
 	url = https://github.com/nothings/stb.git
 	branch = master
+[submodule "external/tinyobjloader"]
+	path = external/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader.git
