@@ -72,6 +72,13 @@ int GraphicsWindow::get_key_state(int key) const
     return glfwGetKey(window.get(), key);
 }
 
+glm::vec2 GraphicsWindow::get_mouse_pos() const
+{
+    double x, y;
+    glfwGetCursorPos(window.get(), &x, &y);
+    return glm::vec2(x, y);
+}
+
 glm::vec2 GraphicsWindow::get_mouse_delta()
 {
     double x, y;

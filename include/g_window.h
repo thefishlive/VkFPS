@@ -42,6 +42,7 @@ public:
     void close() const;
 
     int get_key_state(int key) const;
+    glm::vec2 get_mouse_pos() const;
     glm::vec2 get_mouse_delta();
 
     vk::SurfaceKHR surface;
