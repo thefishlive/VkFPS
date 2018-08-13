@@ -24,7 +24,7 @@
 
 #include "g_device.h"
 
-void GraphicsTransferBatch::pipeline_barrier(vk::PipelineStageFlags source_stage, vk::PipelineStageFlags dest_stage, vk::ArrayProxy<const vk::ImageMemoryBarrier> memory_barriers)
+void GraphicsTransferBatch::pipeline_barrier(vk::PipelineStageFlags source_stage, vk::PipelineStageFlags dest_stage, vk::ArrayProxy<const vk::ImageMemoryBarrier> memory_barriers) const
 {
     this->cmd.pipelineBarrier(source_stage, dest_stage, vk::DependencyFlags(), {}, {}, memory_barriers);
 }
@@ -78,22 +78,27 @@ std::unique_ptr<GraphicsTransferBatch> GraphicsTransferContext::start_batch(Grap
 
 void GraphicsTransferContext::end_batch(std::unique_ptr<GraphicsTransferBatch> batch, bool sync_frame)
 {
-    vk::CommandBuffer buffer = (vk::CommandBuffer) *batch;
-    buffer.end();
-
     std::vector<vk::Semaphore> update_semaphores;
     vk::Fence fence = device->device.createFence({});
 
     if (sync_frame)
     {
-        update_semaphores.push_back(device->create_semaphore());
+        if (batch->dest != GraphicsTransferHardwareDest::eGraphics)
+        {
+            /*
+            * Use semaphores for cross queue synchronisation
+            */
+            update_semaphores.push_back(device->create_semaphore());
+        }
     }
 
-    frame_syncs.push_back(BatchSubmissionInfo(batch->dest, fence, update_semaphores, (vk::CommandBuffer) *batch));
+    vk::CommandBuffer buffer = (vk::CommandBuffer) *batch;
+    buffer.end();
 
+    std::shared_ptr<GraphicsQueue> queue = this->get_hw_queue(batch->dest);
     std::vector<vk::CommandBuffer> commands{ buffer };
 
-    vk::SubmitInfo submit_info(
+    vk::SubmitInfo submit_info (
         0, nullptr, nullptr,
         (uint32_t)commands.size(), commands.data(),
         (uint32_t)update_semaphores.size(), update_semaphores.data()
@@ -101,8 +106,7 @@ void GraphicsTransferContext::end_batch(std::unique_ptr<GraphicsTransferBatch> b
 
     std::array<vk::SubmitInfo, 1> submits = { submit_info };
 
-    std::shared_ptr<GraphicsQueue> queue = this->get_hw_queue(batch->dest);
-    
+    frame_syncs.push_back(BatchSubmissionInfo(batch->dest, fence, update_semaphores, (vk::CommandBuffer) *batch));
     queue->queue.submit((uint32_t)submits.size(), submits.data(), fence);
 }
 
