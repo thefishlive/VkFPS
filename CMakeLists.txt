@@ -94,6 +94,7 @@ add_all("g_window")
 
 add_all("r_camera")
 add_all("r_model")
+add_all("r_model_loader")
 add_all("r_material")
 add_all("r_scene")
 add_all("r_renderer")
@@ -126,9 +127,11 @@ target_link_libraries(VulkanFps
     PUBLIC glfw
 )
 target_include_directories(VulkanFps
-    PUBLIC external/glfw/include
-    PUBLIC external/glm
-    PUBLIC external/vma/src
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/glm"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/tinyobjloader"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/vma/src"
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
     PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/include"
 )

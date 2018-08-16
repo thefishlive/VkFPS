@@ -54,7 +54,7 @@ class GraphicsTransferBatch
 public:
     explicit GraphicsTransferBatch(GraphicsTransferHardwareDest dest, vk::CommandBuffer cmd) : dest(dest), cmd(cmd) {}
 
-    void pipeline_barrier(vk::PipelineStageFlags source_stage, vk::PipelineStageFlags dest_stage, vk::ArrayProxy<const vk::ImageMemoryBarrier> memory_barriers);
+    void pipeline_barrier(vk::PipelineStageFlags source_stage, vk::PipelineStageFlags dest_stage, vk::ArrayProxy<const vk::ImageMemoryBarrier> memory_barriers) const;
     void blit_buffer_to_buffer(vk::Buffer src, vk::Buffer dest, vk::ArrayProxy<const vk::BufferCopy> regions) const;
     void blit_image_to_image(vk::Image src, vk::ImageLayout src_layout, vk::Image dest, vk::ImageLayout dest_layout, vk::ArrayProxy<const vk::ImageCopy> regions) const;
     void blit_buffer_to_image(vk::Buffer src, vk::Image dest, vk::ImageLayout dest_layout, vk::ArrayProxy<const vk::BufferImageCopy> regions) const;

@@ -19,70 +19,32 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER        *
 * DEALINGS IN THE SOFTWARE.                                                  *
 ******************************************************************************/
-
 #pragma once
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <map>
 #include <vulkan/vulkan.hpp>
 
 #include "g_device.h"
-#include "g_devmem.h"
+#include "r_model.h"
+#include <tiny_obj_loader.h>
 
-#include "r_material.h"
-#include "r_renderer.h"
-#include "r_shaderif.h"
-
-struct MaterialData
-{
-	std::unique_ptr<Material> material;
-	std::vector<uint32_t> indicies;
-	uint32_t start_index;
-
-	explicit MaterialData(std::unique_ptr<Material> & material, const std::vector<uint32_t>& indicies = std::vector<uint32_t>(), uint32_t start_index = 0)
-		: material(std::move(material)),
-		indicies(indicies),
-		start_index(start_index)
-	{
-	}
-};
-
-class Model
+class ModelLoader
 {
 public:
-	Model(
-        std::shared_ptr<GraphicsDevice>& device,
-        std::shared_ptr<GraphicsDevmem>& devmem,
-        std::shared_ptr<Renderer>& renderer,
-        std::vector<Vertex>& verticies,
-        std::vector<std::unique_ptr<Material>>& materials,
-        std::vector<std::vector<uint32_t>>& indicies
-        );
-	~Model();
+    ModelLoader(std::shared_ptr<GraphicsDevice> &device, std::shared_ptr<GraphicsDevmem> &devmem, std::shared_ptr<Renderer> &renderer);
+    ~ModelLoader();
 
-    void set_position(glm::vec3 & position) { this->position = position; }
-    void set_rotation(glm::quat & rotation) { this->rotation = rotation; }
-
-	void invalidate_recording();
-	void render(vk::CommandBuffer command_buffer, uint32_t image) const;
+    std::unique_ptr<Model> ModelLoader::load_model(std::string path);
 
 private:
-	std::shared_ptr<GraphicsDevice>& device;
-	std::shared_ptr<GraphicsDevmem> devmem;
-	std::shared_ptr<Renderer> renderer;
+    std::shared_ptr<GraphicsDevice> device;
+    std::shared_ptr<GraphicsDevmem> devmem;
+    std::shared_ptr<Renderer> renderer;
 
-	std::vector<vk::CommandBuffer> command_buffers;
+    static std::string get_library_path(const std::string& library, const std::string& file);
 
-	glm::vec3 position;
-    glm::quat rotation;
+    static glm::vec4 to_vec4(float f[3]);
 
-	std::vector<Vertex> verticies;
-	std::vector<std::unique_ptr<MaterialData>> material_data;
-
-	uint32_t index_count;
-
-	std::unique_ptr<GraphicsDevmemBuffer> vertex_buffer;
-	std::unique_ptr<GraphicsDevmemBuffer> index_buffer;
+    static glm::vec4 get_vertex(const tinyobj::attrib_t& attrib, int index);
+    static glm::vec4 get_normal(const tinyobj::attrib_t& attrib, int index);
+    static glm::vec2 get_uv(const tinyobj::attrib_t& attrib, int index);
 };

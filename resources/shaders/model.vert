@@ -26,11 +26,11 @@ out gl_PerVertex {
 };
 
 void main() {
-    out_position = model_data.model * vec4(position);
+    out_position = camera_data.proj_view * model_data.model * vec4(position);
     out_position.y = -out_position.y;
 
     out_normal = transpose(inverse(model_data.model)) * normalize(normal);
     
-    gl_Position = camera_data.proj_view * out_position;
+    gl_Position = out_position;
     out_uv = in_uv;
 }

@@ -34,6 +34,7 @@
 #include "r_model.h"
 #include "r_scene.h"
 #include "u_debug.h"
+#include "r_model_loader.h"
 
 int main(int argc, char *argv[])
 {
@@ -55,28 +56,30 @@ int main(int argc, char *argv[])
 
         std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(device, window, devmem, swapchain);
 
-        std::unique_ptr<Model> sphere_model1 = std::make_unique<Model>(device, devmem, renderer, "models/sphere.obj");
+        std::unique_ptr<ModelLoader> model_loader = std::make_unique<ModelLoader>(device, devmem, renderer);
+
+        std::unique_ptr<Model> sphere_model1 = model_loader->load_model("models/sphere.obj");
         sphere_model1->set_position(glm::vec3({ 1, 0, 0 }));
-        std::unique_ptr<Model> sphere_model2 = std::make_unique<Model>(device, devmem, renderer, "models/sphere.obj");
+        std::unique_ptr<Model> sphere_model2 = model_loader->load_model("models/sphere.obj");
         sphere_model2->set_position(glm::vec3({ -1, 1, 0 }));
 
-        std::unique_ptr<Model> plane_model1 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model1 = model_loader->load_model("models/plane.obj");
         plane_model1->set_position(glm::vec3({ -5, -2, 0 }));
-        std::unique_ptr<Model> plane_model2 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model2 = model_loader->load_model("models/plane.obj");
         plane_model2->set_position(glm::vec3({ 0, -2, 0 }));
-        std::unique_ptr<Model> plane_model3 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model3 = model_loader->load_model("models/plane.obj");
         plane_model3->set_position(glm::vec3({ 5, -2, 0 }));
-        std::unique_ptr<Model> plane_model4 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model4 = model_loader->load_model("models/plane.obj");
         plane_model4->set_position(glm::vec3({ -5, -2, 5 }));
-        std::unique_ptr<Model> plane_model5 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model5 = model_loader->load_model("models/plane.obj");
         plane_model5->set_position(glm::vec3({ 0, -2, 5 }));
-        std::unique_ptr<Model> plane_model6 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model6 = model_loader->load_model("models/plane.obj");
         plane_model6->set_position(glm::vec3({ 5, -2, 5 }));
-        std::unique_ptr<Model> plane_model7 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model7 = model_loader->load_model("models/plane.obj");
         plane_model7->set_position(glm::vec3({ -5, -2, -5 }));
-        std::unique_ptr<Model> plane_model8 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model8 = model_loader->load_model("models/plane.obj");
         plane_model8->set_position(glm::vec3({ 0, -2, -5 }));
-        std::unique_ptr<Model> plane_model9 = std::make_unique<Model>(device, devmem, renderer, "models/plane.obj");
+        std::unique_ptr<Model> plane_model9 = model_loader->load_model("models/plane.obj");
         plane_model9->set_position(glm::vec3({ 5, -2, -5 }));
 
         main_scene->add_model(std::move(sphere_model1));
@@ -117,7 +120,6 @@ int main(int argc, char *argv[])
 			renderer->end_renderpass(cmd);
 
 			cmd.end();
-
 		}
 
 		LOG_INFO("Setup vulkan application");
@@ -144,6 +146,8 @@ int main(int argc, char *argv[])
             {
                 movement += glm::vec3(0.0f, 0.0f, -1.0f);
             }
+
+            // glm::vec2 mouse_delta = window->get_mouse_delta();
 
             movement *= 0.01f;
             main_camera->move(movement);

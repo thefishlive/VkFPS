@@ -34,7 +34,6 @@ void main() {
 	out_position.a = linearDepth(gl_FragCoord.z);
 
 	out_normal = normalize(in_normal);
-//	out_normal.y = out_normal.y;
 
 	out_color = vec4(shader_data.diffuse.xyz, shader_data.alpha);
 
