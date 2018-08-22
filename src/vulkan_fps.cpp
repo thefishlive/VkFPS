@@ -46,7 +46,13 @@ int main(int argc, char *argv[])
 		std::shared_ptr<GraphicsDevmem> devmem = std::make_shared<GraphicsDevmem>(device);
 		std::shared_ptr<GraphicsSwapchain> swapchain = std::make_shared<GraphicsSwapchain>(window, device);
 
-		std::shared_ptr<Camera> main_camera = std::make_shared<Camera>(devmem, glm::radians(70.0f), 800.0f / 800.0f, 0.1f, 100.0f, glm::vec3(0.0f, 0.0f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		std::shared_ptr<Camera> main_camera = std::make_shared<Camera>(
+            devmem, 
+            glm::radians(70.0f), 800.0f / 800.0f, 0.1f, 100.0f, 
+            glm::vec3(0.0f, -0.7f, -5.0f), 
+            glm::vec3(0.0f, 0.0f, 0.0f), 
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
 		Camera::set(main_camera);
 
 		std::vector<vk::CommandBuffer> command_buffers = device->graphics_queue->allocate_command_buffers(swapchain->get_image_count());
@@ -58,32 +64,36 @@ int main(int argc, char *argv[])
 
         std::unique_ptr<ModelLoader> model_loader = std::make_unique<ModelLoader>(device, devmem, renderer);
 
-        std::unique_ptr<Model> sphere_model1 = model_loader->load_model("models/sphere.obj");
+        std::unique_ptr<Model> chalet_model = model_loader->load_model("models/chalet.obj");
+        chalet_model->set_position(glm::vec3(0, 0, 0));
+        main_scene->add_model(std::move(chalet_model));
+
+ /*       std::unique_ptr<Model> sphere_model1 = model_loader->load_model("models/sphere.obj");
         sphere_model1->set_position(glm::vec3({ 1, 0, 0 }));
         std::unique_ptr<Model> sphere_model2 = model_loader->load_model("models/sphere.obj");
-        sphere_model2->set_position(glm::vec3({ -1, 1, 0 }));
+        sphere_model2->set_position(glm::vec3({ -1, 1, 0 })); */
 
         std::unique_ptr<Model> plane_model1 = model_loader->load_model("models/plane.obj");
-        plane_model1->set_position(glm::vec3({ -5, -2, 0 }));
+        plane_model1->set_position(glm::vec3({ -5, 0, 0 }));
         std::unique_ptr<Model> plane_model2 = model_loader->load_model("models/plane.obj");
-        plane_model2->set_position(glm::vec3({ 0, -2, 0 }));
+        plane_model2->set_position(glm::vec3({ 0, 0, 0 }));
         std::unique_ptr<Model> plane_model3 = model_loader->load_model("models/plane.obj");
-        plane_model3->set_position(glm::vec3({ 5, -2, 0 }));
+        plane_model3->set_position(glm::vec3({ 5, 0, 0 }));
         std::unique_ptr<Model> plane_model4 = model_loader->load_model("models/plane.obj");
-        plane_model4->set_position(glm::vec3({ -5, -2, 5 }));
+        plane_model4->set_position(glm::vec3({ -5, 0, 5 }));
         std::unique_ptr<Model> plane_model5 = model_loader->load_model("models/plane.obj");
-        plane_model5->set_position(glm::vec3({ 0, -2, 5 }));
+        plane_model5->set_position(glm::vec3({ 0, 0, 5 }));
         std::unique_ptr<Model> plane_model6 = model_loader->load_model("models/plane.obj");
-        plane_model6->set_position(glm::vec3({ 5, -2, 5 }));
+        plane_model6->set_position(glm::vec3({ 5, 0, 5 }));
         std::unique_ptr<Model> plane_model7 = model_loader->load_model("models/plane.obj");
-        plane_model7->set_position(glm::vec3({ -5, -2, -5 }));
+        plane_model7->set_position(glm::vec3({ -5, 0, -5 }));
         std::unique_ptr<Model> plane_model8 = model_loader->load_model("models/plane.obj");
-        plane_model8->set_position(glm::vec3({ 0, -2, -5 }));
+        plane_model8->set_position(glm::vec3({ 0, 0, -5 }));
         std::unique_ptr<Model> plane_model9 = model_loader->load_model("models/plane.obj");
-        plane_model9->set_position(glm::vec3({ 5, -2, -5 }));
+        plane_model9->set_position(glm::vec3({ 5, 0, -5 }));
 
-        main_scene->add_model(std::move(sphere_model1));
-        main_scene->add_model(std::move(sphere_model2));
+        /* main_scene->add_model(std::move(sphere_model1));
+        main_scene->add_model(std::move(sphere_model2));*/
         main_scene->add_model(std::move(plane_model1));
         main_scene->add_model(std::move(plane_model2));
         main_scene->add_model(std::move(plane_model3));
@@ -149,7 +159,7 @@ int main(int argc, char *argv[])
 
             // glm::vec2 mouse_delta = window->get_mouse_delta();
 
-            movement *= 0.01f;
+            movement *= 0.005f;
             main_camera->move(movement);
 
             if (window->get_key_state(GLFW_KEY_R))

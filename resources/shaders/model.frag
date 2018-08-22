@@ -1,6 +1,5 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
-#extension GL_KHR_vulkan_glsl : enable
 
 const int pcoffset = 64;
 
@@ -12,6 +11,10 @@ layout(location = 0) out vec4 out_final;
 layout(location = 1) out vec4 out_color;
 layout(location = 2) out vec4 out_position;
 layout(location = 3) out vec4 out_normal;
+
+layout(binding = 2) uniform sampler2D ambient_texture;
+layout(binding = 3) uniform sampler2D diffuse_texture;
+layout(binding = 4) uniform sampler2D specular_texture;
 
 layout (constant_id = 0) const float NEAR_PLANE = 0.1f;
 layout (constant_id = 1) const float FAR_PLANE = 256.0f;
@@ -35,7 +38,7 @@ void main() {
 
 	out_normal = normalize(in_normal);
 
-	out_color = vec4(shader_data.diffuse.xyz, shader_data.alpha);
+    out_color = texture(diffuse_texture, in_uv);
 
 	// Avoid validation error
 	// out_final = vec4(0);

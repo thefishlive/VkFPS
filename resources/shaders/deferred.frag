@@ -37,7 +37,7 @@ void main() {
 	vec4 fragColor = vec4(0, 0, 0, 0);
     fragColor += ambient_light * color;
 	fragColor += intensity * color;
-	fragColor = clamp(fragColor, 0.0, 1.0);
+	fragColor = clamp(fragColor * albedo, 0.0, 1.0);
 
 	out_color = vec4(fragColor.rgb, 1.0);
     //out_color = texture(samplerNormalMap, in_uv).rgba;
